@@ -233,9 +233,13 @@ async function cloudCreate(g,email){
     body:'email='+encodeURIComponent(email)});
   if(!r.ok)throw new Error('хранилище недоступно (HTTP '+r.status+')');
   const b=(await r.text()).trim();
-  if(!b||b.length>60||b.indexOf('<')>=0)throw new Error('хранилище вернуло ошибку');
+  if(!/^[A-Za-z0-9]{10,40}$/.test(b))throw new Error('хранилище вернуло ошибку: '+b.slice(0,120));
   const r2=await fetch('https://kvdb.io/'+b+'/state',{method:'PUT',body:JSON.stringify(g)});
-  if(!r2.ok)throw new Error('не удалось записать игру');
+  if(!r2.ok){
+    const msg=(await r2.text()).slice(0,200);
+    if(msg.indexOf('not verified')>=0)throw new Error('kvdb.io отправил вам письмо для подтверждения email. Откройте почту (проверьте и спам), кликните ссылку активации — и создайте комнату ещё раз');
+    throw new Error('не удалось записать игру: '+msg);
+  }
   return 'kv-'+b;
 }
 async function cloudGet(code){
