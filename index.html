@@ -213,23 +213,16 @@ function roomUrl(code){
   if(code.indexOf('kv-')===0)return 'https://kvdb.io/'+code.slice(3)+'/state';
   return null;
 }
-async function cloudCreate(g){
-  try{
-    const r=await fetch(JB,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(g)});
-    if(r.ok){
-      const loc=r.headers.get('Location')||r.headers.get('location');
-      if(loc){const id=loc.split('/').filter(Boolean).pop();if(id&&id.length>5)return 'jb-'+id;}
-    }
-  }catch(e){}
-  const r2=await fetch('https://kvdb.io',{method:'POST',body:'email='});
-  if(r2.ok){
-    const b=(await r2.text()).trim();
-    if(b&&b.length<60&&b.indexOf('<')<0){
-      const r3=await fetch('https://kvdb.io/'+b+'/state',{method:'PUT',body:JSON.stringify(g)});
-      if(r3.ok)return 'kv-'+b;
-    }
-  }
-  throw new Error('хранилище недоступно');
+async function cloudCreate(g,email){
+  const r=await fetch('https://kvdb.io',{method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'email='+encodeURIComponent(email)});
+  if(!r.ok)throw new Error('хранилище недоступно (HTTP '+r.status+')');
+  const b=(await r.text()).trim();
+  if(!b||b.length>60||b.indexOf('<')>=0)throw new Error('хранилище вернуло ошибку');
+  const r2=await fetch('https://kvdb.io/'+b+'/state',{method:'PUT',body:JSON.stringify(g)});
+  if(!r2.ok)throw new Error('не удалось записать игру');
+  return 'kv-'+b;
 }
 async function cloudGet(code){
   const u=roomUrl(code);if(!u)throw new Error('неверный код комнаты');
@@ -291,13 +284,14 @@ function playerScore(pi){
 /* ================= ЛОББИ: СОЗДАНИЕ / РЕГИСТРАЦИЯ ================= */
 function gv(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 async function createGame(cloud){
-  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||1000;
+  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||1000,email=gv('c_email');
   if(!name){alert('Введите имя');return;}
+  if(cloud&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert('Введите корректный email — он нужен облачному хранилищу для создания комнаты');return;}
   const g=defGame();g.admin=name;g.fee=fee;g.players=[{name:name,fc:fc}];g.rev=1;g.updated=Date.now();
   if(cloud){
     setMsg('Создаю комнату…');render();
     try{
-      const code=await cloudCreate(g);
+      const code=await cloudCreate(g,email);
       LS.room=code;LS.myName=name;G=g;
       setMsg('Комната создана. Отправьте друзьям приглашение ниже.');
     }catch(e){setMsg('Не удалось создать облачную комнату ('+e.message+'). Можно играть локально на одном устройстве.',true);render();return;}
@@ -558,11 +552,12 @@ function viewLobby(){
       '<div class="fld"><label>Ваше имя (вы — организатор)</label><input type="text" id="c_name"></div>'+
       '<div class="fld"><label>Прогноз счёта финала (тай-брейк)</label><input type="text" id="c_fc" placeholder="например 2:1"></div>'+
       '<div class="fld"><label>Взнос с человека</label><input type="number" id="c_fee" value="1000"></div>'+
+      '<div class="fld"><label>Ваш email (нужен хранилищу kvdb.io для создания комнаты)</label><input type="text" id="c_email" placeholder="you@example.com"></div>'+
       '<div class="row"><button class="btn" onclick="createGame(true)">Создать комнату в облаке</button></div>'+
       '<div class="hint" style="margin-top:8px">Комната живёт в бесплатном облаке — друзья регистрируются сами по коду. '+
       '<a href="#" style="color:var(--mut)" onclick="createGame(false);return false">Или играть на одном устройстве →</a></div></div>';
     h+='<div class="card"><h2>🔑 Присоединиться</h2>'+
-      '<div class="fld"><label>Код комнаты или ссылка-приглашение</label><input type="text" id="j_code" placeholder="jb-… или kv-…"></div>'+
+      '<div class="fld"><label>Код комнаты или ссылка-приглашение</label><input type="text" id="j_code" placeholder="kv-…"></div>'+
       '<button class="btn" onclick="joinRoom()">Подключиться</button>'+
       '<div class="hint" style="margin-top:8px">Код вам пришлёт организатор. После подключения зарегистрируетесь сами.</div></div>';
     h+='</div>'+msgHtml();
@@ -745,7 +740,7 @@ function viewRules(){
    '<b>B:</b> Германия, Нидерланды, Норвегия, Бельгия, Колумбия, Марокко, Уругвай<br>'+
    '<b>C:</b> остальные 35 сборных</div>'+
    '<h3>Как устроена комната</h3>'+
-   '<div class="hint">Игра хранится в бесплатном JSON-облаке (jsonblob.com или kvdb.io) — без серверов и аккаунтов. Организатор создаёт комнату и рассылает код или ссылку, участники регистрируются сами. Страница синхронизируется каждые 15 секунд. Резервная копия — «Экспорт состояния» в Лобби. Каждый участник выбирает сборные со своего устройства, когда подходит его очередь.</div></div>';
+   '<div class="hint">Игра хранится в бесплатном JSON-облаке (kvdb.io) — без серверов и аккаунтов, организатору нужен только email. Организатор создаёт комнату и рассылает код или ссылку, участники регистрируются сами. Страница синхронизируется каждые 15 секунд. Резервная копия — «Экспорт состояния» в Лобби. Каждый участник выбирает сборные со своего устройства, когда подходит его очередь.</div></div>';
 }
 
 function render(){
