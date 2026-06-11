@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЧМ-2026 · Тотализатор</title>
+<style>
+:root{
+  --bg:#0a1c13; --card:#122b1d; --card2:#0e2418; --line:#1f4530;
+  --gold:#e8c46b; --txt:#e9f2ec; --mut:#8fae9c;
+  --tA:#e8c46b; --tB:#8fb4d9; --tC:#7fd49a;
+  --red:#e07a6a; --ok:#7fd49a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 50% -100px,#16402a 0%,var(--bg) 60%);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding-bottom:60px}
+.wrap{max-width:980px;margin:0 auto;padding:0 14px}
+header{padding:24px 0 8px;text-align:center}
+header h1{font-size:25px;letter-spacing:.5px}
+header .sub{color:var(--mut);font-size:13px;margin-top:4px}
+.bank{display:inline-block;margin:10px 4px 0;background:var(--card);border:1px solid var(--line);
+  border-radius:30px;padding:6px 16px;font-size:13px}
+.bank b{color:var(--gold)}
+nav{display:flex;gap:6px;justify-content:center;margin:14px 0;flex-wrap:wrap}
+nav button{background:var(--card);color:var(--mut);border:1px solid var(--line);border-radius:10px;
+  padding:9px 16px;font-size:14px;cursor:pointer}
+nav button.on{background:var(--gold);color:#1c1604;font-weight:600;border-color:var(--gold)}
+nav button:disabled{opacity:.35;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:17px;margin-bottom:10px}
+.card h3{font-size:14px;color:var(--mut);margin:12px 0 6px}
+.hint{color:var(--mut);font-size:13px;line-height:1.5}
+.btn{background:var(--gold);color:#1c1604;border:none;border-radius:10px;padding:10px 18px;
+  font-size:14px;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line);font-weight:400}
+.btn.danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.mini{padding:4px 10px;font-size:13px;border-radius:8px}
+input[type=text],input[type=number],textarea{background:var(--card2);border:1px solid var(--line);
+  color:var(--txt);border-radius:8px;padding:9px 10px;font-size:14px;width:100%}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fld{margin-bottom:8px}
+.fld label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.tierbadge{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;color:#10210f}
+.bA{background:var(--tA)} .bB{background:var(--tB)} .bC{background:var(--tC)}
+.teamgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-top:8px}
+.tbtn{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;font-size:13px;color:var(--txt);cursor:pointer;text-align:left}
+.tbtn:hover:not(:disabled){border-color:var(--gold)}
+.tbtn:disabled{opacity:.45;cursor:default}
+.tbtn .fl{font-size:18px;flex:none}
+.tbtn .own{margin-left:auto;font-size:11px;color:var(--gold);flex:none}
+.tbtn.taken{opacity:.45}
+.turn{background:var(--card2);border:1px dashed var(--gold);border-radius:12px;padding:12px 14px;
+  margin-bottom:12px;font-size:15px}
+.turn b{color:var(--gold)}
+.turn.me{border-style:solid;box-shadow:0 0 16px rgba(232,196,107,.18)}
+.lb{display:flex;flex-direction:column;gap:10px}
+.pcard{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pcard.lead{border-color:var(--gold);box-shadow:0 0 18px rgba(232,196,107,.12)}
+.phead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.phead .rank{font-size:18px;width:26px;flex:none}
+.phead .nm{font-size:16px;font-weight:600}
+.phead .pts{margin-left:auto;font-size:22px;font-weight:700;color:var(--gold)}
+.phead .pts small{font-size:12px;color:var(--mut);font-weight:400}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
+  border-radius:20px;padding:4px 11px;font-size:13px}
+.chip .p{color:var(--gold);font-weight:600}
+.chip .st{color:var(--mut);font-size:11px}
+.syncbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.msg{font-size:13px;color:var(--ok);margin-top:6px}
+.msg.err{color:var(--red)}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--mut);font-size:14px;padding:6px 0}
+table.ptable{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.ptable th,.ptable td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+.ptable td:first-child,.ptable th:first-child{text-align:left}
+.ptable th{color:var(--mut);font-weight:500}
+.mrow{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.mrow:last-child{border-bottom:none}
+.mrow .tnm{min-width:170px;font-size:14px}
+.cnt{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:2px 4px;font-size:12px}
+.cnt button{background:none;border:none;color:var(--gold);font-size:15px;cursor:pointer;width:20px}
+.cnt .v{min-width:14px;text-align:center}
+.cnt .l{color:var(--mut)}
+.stchips{display:flex;gap:4px;flex-wrap:wrap}
+.stchips button{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:7px;
+  padding:3px 8px;font-size:12px;cursor:pointer}
+.stchips button.on{background:var(--ok);color:#10210f;border-color:var(--ok);font-weight:600}
+.mlist{font-size:13px;color:var(--mut);max-height:300px;overflow-y:auto}
+.mlist div{padding:4px 0;border-bottom:1px solid var(--line)}
+.stagepill{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;margin-right:6px}
+.plist{list-style:none}
+.plist li{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:15px}
+.plist li:last-child{border-bottom:none}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--mut)}
+.tag.adm{color:var(--gold);border-color:var(--gold)}
+.code{font-family:ui-monospace,Menlo,monospace;background:var(--card2);border:1px dashed var(--line);
+  border-radius:8px;padding:8px 12px;font-size:14px;word-break:break-all;user-select:all}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.cols2{grid-template-columns:1fr}.mrow .tnm{min-width:100%}}
+footer{margin-top:30px;text-align:center;color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>⚽ ЧМ-2026 · Дружеский тотализатор</h1>
+  <div class="sub">11 июня — 19 июля 2026 · США / Канада / Мексика</div>
+  <div id="hdr"></div>
+</header>
+<nav id="tabs"></nav>
+<main id="app"></main>
+<footer>Очки считаются автоматически · матчи: ESPN · комната: бесплатное JSON-облако</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= СПРАВОЧНИКИ ================= */
+const P = {
+  gw:{A:2,B:3,C:4}, gd:{A:1,B:1,C:2}, ko:{A:2,B:4,C:6},
+  w32:{A:3,B:5,C:7}, w16:{A:5,B:7,C:10}, wqf:{A:8,B:11,C:15},
+  wsf:{A:12,B:16,C:21}, wf:{A:18,B:23,C:30}
+};
+const STAGE_KEYS = ['ko','w32','w16','wqf','wsf','wf'];
+const STAGE_LBL = {ko:'плей-офф', w32:'1/8 финала', w16:'1/4 финала', wqf:'полуфинал', wsf:'финал', wf:'чемпион 🏆'};
+const TIER_NAME = {A:'Фавориты', B:'Претенденты', C:'Тёмные лошадки'};
+
+const TEAMS = [
+ {id:'esp',ru:'Испания',en:'Spain',fl:'🇪🇸',gr:'H',tier:'A'},
+ {id:'fra',ru:'Франция',en:'France',fl:'🇫🇷',gr:'I',tier:'A'},
+ {id:'eng',ru:'Англия',en:'England',fl:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',gr:'L',tier:'A'},
+ {id:'bra',ru:'Бразилия',en:'Brazil',fl:'🇧🇷',gr:'C',tier:'A'},
+ {id:'arg',ru:'Аргентина',en:'Argentina',fl:'🇦🇷',gr:'J',tier:'A'},
+ {id:'por',ru:'Португалия',en:'Portugal',fl:'🇵🇹',gr:'K',tier:'A'},
+ {id:'ger',ru:'Германия',en:'Germany',fl:'🇩🇪',gr:'E',tier:'B'},
+ {id:'ned',ru:'Нидерланды',en:'Netherlands',fl:'🇳🇱',gr:'F',tier:'B'},
+ {id:'nor',ru:'Норвегия',en:'Norway',fl:'🇳🇴',gr:'I',tier:'B'},
+ {id:'bel',ru:'Бельгия',en:'Belgium',fl:'🇧🇪',gr:'G',tier:'B'},
+ {id:'col',ru:'Колумбия',en:'Colombia',fl:'🇨🇴',gr:'K',tier:'B'},
+ {id:'mar',ru:'Марокко',en:'Morocco',fl:'🇲🇦',gr:'C',tier:'B'},
+ {id:'uru',ru:'Уругвай',en:'Uruguay',fl:'🇺🇾',gr:'H',tier:'B'},
+ {id:'usa',ru:'США',en:'United States',fl:'🇺🇸',gr:'D',tier:'C'},
+ {id:'sui',ru:'Швейцария',en:'Switzerland',fl:'🇨🇭',gr:'B',tier:'C'},
+ {id:'jpn',ru:'Япония',en:'Japan',fl:'🇯🇵',gr:'F',tier:'C'},
+ {id:'mex',ru:'Мексика',en:'Mexico',fl:'🇲🇽',gr:'A',tier:'C'},
+ {id:'cro',ru:'Хорватия',en:'Croatia',fl:'🇭🇷',gr:'L',tier:'C'},
+ {id:'ecu',ru:'Эквадор',en:'Ecuador',fl:'🇪🇨',gr:'E',tier:'C'},
+ {id:'sen',ru:'Сенегал',en:'Senegal',fl:'🇸🇳',gr:'I',tier:'C'},
+ {id:'swe',ru:'Швеция',en:'Sweden',fl:'🇸🇪',gr:'F',tier:'C'},
+ {id:'cze',ru:'Чехия',en:'Czechia',fl:'🇨🇿',gr:'A',tier:'C'},
+ {id:'kor',ru:'Южная Корея',en:'South Korea',fl:'🇰🇷',gr:'A',tier:'C'},
+ {id:'rsa',ru:'ЮАР',en:'South Africa',fl:'🇿🇦',gr:'A',tier:'C'},
+ {id:'bih',ru:'Босния и Герц.',en:'Bosnia-Herzegovina',fl:'🇧🇦',gr:'B',tier:'C'},
+ {id:'can',ru:'Канада',en:'Canada',fl:'🇨🇦',gr:'B',tier:'C'},
+ {id:'qat',ru:'Катар',en:'Qatar',fl:'🇶🇦',gr:'B',tier:'C'},
+ {id:'hai',ru:'Гаити',en:'Haiti',fl:'🇭🇹',gr:'C',tier:'C'},
+ {id:'sco',ru:'Шотландия',en:'Scotland',fl:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',gr:'C',tier:'C'},
+ {id:'aus',ru:'Австралия',en:'Australia',fl:'🇦🇺',gr:'D',tier:'C'},
+ {id:'par',ru:'Парагвай',en:'Paraguay',fl:'🇵🇾',gr:'D',tier:'C'},
+ {id:'tur',ru:'Турция',en:'Türkiye',fl:'🇹🇷',gr:'D',tier:'C'},
+ {id:'cuw',ru:'Кюрасао',en:'Curaçao',fl:'🇨🇼',gr:'E',tier:'C'},
+ {id:'civ',ru:'Кот-д’Ивуар',en:'Ivory Coast',fl:'🇨🇮',gr:'E',tier:'C'},
+ {id:'tun',ru:'Тунис',en:'Tunisia',fl:'🇹🇳',gr:'F',tier:'C'},
+ {id:'egy',ru:'Египет',en:'Egypt',fl:'🇪🇬',gr:'G',tier:'C'},
+ {id:'irn',ru:'Иран',en:'Iran',fl:'🇮🇷',gr:'G',tier:'C'},
+ {id:'nzl',ru:'Новая Зеландия',en:'New Zealand',fl:'🇳🇿',gr:'G',tier:'C'},
+ {id:'cpv',ru:'Кабо-Верде',en:'Cape Verde',fl:'🇨🇻',gr:'H',tier:'C'},
+ {id:'ksa',ru:'Сауд. Аравия',en:'Saudi Arabia',fl:'🇸🇦',gr:'H',tier:'C'},
+ {id:'irq',ru:'Ирак',en:'Iraq',fl:'🇮🇶',gr:'I',tier:'C'},
+ {id:'alg',ru:'Алжир',en:'Algeria',fl:'🇩🇿',gr:'J',tier:'C'},
+ {id:'aut',ru:'Австрия',en:'Austria',fl:'🇦🇹',gr:'J',tier:'C'},
+ {id:'jor',ru:'Иордания',en:'Jordan',fl:'🇯🇴',gr:'J',tier:'C'},
+ {id:'cod',ru:'ДР Конго',en:'Congo DR',fl:'🇨🇩',gr:'K',tier:'C'},
+ {id:'uzb',ru:'Узбекистан',en:'Uzbekistan',fl:'🇺🇿',gr:'K',tier:'C'},
+ {id:'gha',ru:'Гана',en:'Ghana',fl:'🇬🇭',gr:'L',tier:'C'},
+ {id:'pan',ru:'Панама',en:'Panama',fl:'🇵🇦',gr:'L',tier:'C'}
+];
+const T = {}; TEAMS.forEach(t=>T[t.id]=t);
+
+function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+  .replace(/['’.]/g,'').replace(/\s+/g,' ').trim();}
+const EN2ID = {}; TEAMS.forEach(t=>EN2ID[norm(t.en)]=t.id);
+const ALIASES = {'usa':'usa','united states':'usa','turkey':'tur','czech republic':'cze',
+ 'korea republic':'kor','cote divoire':'civ','cabo verde':'cpv','dr congo':'cod',
+ 'democratic republic of the congo':'cod','bosnia and herzegovina':'bih','bosnia herzegovina':'bih',
+ 'curacao':'cuw'};
+function matchTeam(name){const k=norm(name);return EN2ID[k]||ALIASES[k]||null;}
+
+/* ================= СОСТОЯНИЕ ================= */
+const KEY='wc2026-pub-v2';
+let LS={room:'',myName:'',tab:'lobby'};
+let G=null;
+let msg='',msgErr=false,pendingPush=false;
+
+function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:1000,regOpen:true,phase:'lobby',
+  players:[],order:[],picks:{},pickLog:[],res:{},matches:[],lastSync:null};}
+function loadLocal(){
+  try{const raw=localStorage.getItem(KEY);
+    if(raw){const o=JSON.parse(raw);LS.room=o.room||'';LS.myName=o.myName||'';LS.tab=o.tab||'lobby';
+      if(o.G)G=Object.assign(defGame(),o.G);}
+  }catch(e){}
+}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify({room:LS.room,myName:LS.myName,tab:LS.tab,G:G}));}catch(e){}}
+function setMsg(m,err){msg=m;msgErr=!!err;}
+
+/* ================= ОБЛАКО ================= */
+const JB='https://jsonblob.com/api/jsonBlob';
+function roomUrl(code){
+  if(code.indexOf('jb-')===0)return JB+'/'+code.slice(3);
+  if(code.indexOf('kv-')===0)return 'https://kvdb.io/'+code.slice(3)+'/state';
+  return null;
+}
+async function cloudCreate(g){
+  try{
+    const r=await fetch(JB,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(g)});
+    if(r.ok){
+      const loc=r.headers.get('Location')||r.headers.get('location');
+      if(loc){const id=loc.split('/').filter(Boolean).pop();if(id&&id.length>5)return 'jb-'+id;}
+    }
+  }catch(e){}
+  const r2=await fetch('https://kvdb.io',{method:'POST',body:'email='});
+  if(r2.ok){
+    const b=(await r2.text()).trim();
+    if(b&&b.length<60&&b.indexOf('<')<0){
+      const r3=await fetch('https://kvdb.io/'+b+'/state',{method:'PUT',body:JSON.stringify(g)});
+      if(r3.ok)return 'kv-'+b;
+    }
+  }
+  throw new Error('хранилище недоступно');
+}
+async function cloudGet(code){
+  const u=roomUrl(code);if(!u)throw new Error('неверный код комнаты');
+  const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function cloudPut(code,g){
+  const u=roomUrl(code);
+  const r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(g)});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+}
+async function push(){
+  if(!LS.room){saveLocal();return;}
+  try{await cloudPut(LS.room,G);pendingPush=false;}
+  catch(e){pendingPush=true;setMsg('Облако недоступно — изменение сохранено локально, отправлю при следующей синхронизации.',true);render();}
+  saveLocal();
+}
+async function pull(loud){
+  if(!LS.room)return;
+  try{
+    const remote=await cloudGet(LS.room);
+    if(!G||(remote.rev||0)>(G.rev||0)){G=Object.assign(defGame(),remote);saveLocal();render();}
+    else if(pendingPush||(remote.rev||0)<(G.rev||0)){await cloudPut(LS.room,G);pendingPush=false;saveLocal();}
+    if(loud){setMsg('Синхронизировано.');render();}
+  }catch(e){if(loud){setMsg('Не удалось связаться с комнатой: '+e.message,true);render();}}
+}
+async function mutate(fn){
+  if(LS.room){try{const remote=await cloudGet(LS.room);if((remote.rev||0)>(G.rev||0))G=Object.assign(defGame(),remote);}catch(e){}}
+  fn(G);
+  G.rev=(G.rev||0)+1;G.updated=Date.now();
+  saveLocal();render();
+  if(LS.room)push();
+}
+
+/* ================= РОЛИ ================= */
+function isAdmin(){return !!G&&(!LS.room||(LS.myName&&G.admin===LS.myName));}
+function myIdx(){if(!G||!LS.myName)return -1;return G.players.findIndex(p=>p.name===LS.myName);}
+
+/* ================= ОЧКИ ================= */
+function getRes(tid){if(!G.res[tid])G.res[tid]={gw:0,gd:0,ko:false,w32:false,w16:false,wqf:false,wsf:false,wf:false};return G.res[tid];}
+function teamPoints(tid){
+  const t=T[tid],r=(G&&G.res[tid])||{};
+  let p=(r.gw||0)*P.gw[t.tier]+(r.gd||0)*P.gd[t.tier];
+  STAGE_KEYS.forEach(k=>{if(r[k])p+=P[k][t.tier];});
+  return p;
+}
+function teamStageLabel(tid){
+  const r=(G&&G.res[tid])||{};
+  for(let i=STAGE_KEYS.length-1;i>=0;i--){if(r[STAGE_KEYS[i]])return STAGE_LBL[STAGE_KEYS[i]];}
+  return 'группа';
+}
+function playerTeams(pi){return G.pickLog.filter(tid=>G.picks[tid]===pi);}
+function playerScore(pi){
+  let total=0,c=0;
+  playerTeams(pi).forEach(tid=>{const p=teamPoints(tid);total+=p;if(T[tid].tier==='C')c+=p;});
+  return {total,c};
+}
+
+/* ================= ЛОББИ: СОЗДАНИЕ / РЕГИСТРАЦИЯ ================= */
+function gv(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+async function createGame(cloud){
+  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||1000;
+  if(!name){alert('Введите имя');return;}
+  const g=defGame();g.admin=name;g.fee=fee;g.players=[{name:name,fc:fc}];g.rev=1;g.updated=Date.now();
+  if(cloud){
+    setMsg('Создаю комнату…');render();
+    try{
+      const code=await cloudCreate(g);
+      LS.room=code;LS.myName=name;G=g;
+      setMsg('Комната создана. Отправьте друзьям приглашение ниже.');
+    }catch(e){setMsg('Не удалось создать облачную комнату ('+e.message+'). Можно играть локально на одном устройстве.',true);render();return;}
+  }else{
+    LS.room='';LS.myName=name;G=g;
+    setMsg('Локальная игра создана (всё на этом устройстве).');
+  }
+  saveLocal();render();
+}
+async function joinRoom(){
+  let code=gv('j_code');
+  const m=code.match(/(jb|kv)-[A-Za-z0-9-]+/);
+  if(m)code=m[0];
+  if(!code){alert('Введите код комнаты');return;}
+  setMsg('Подключаюсь…');render();
+  try{
+    const g=await cloudGet(code);
+    if(!g||!g.players)throw new Error('это не комната тотализатора');
+    LS.room=code;LS.myName='';G=Object.assign(defGame(),g);
+    setMsg('Комната найдена. Зарегистрируйтесь или выберите себя из списка.');
+    saveLocal();render();
+  }catch(e){setMsg('Не удалось подключиться: '+e.message,true);render();}
+}
+async function registerMe(){
+  const name=gv('r_name'),fc=gv('r_fc');
+  if(!name){alert('Введите имя');return;}
+  let err='';
+  await mutate(g=>{
+    if(g.phase!=='lobby'||!g.regOpen){err='Регистрация закрыта';return;}
+    if(g.players.length>=6){err='Уже 6 участников — мест нет';return;}
+    if(g.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){err='Имя занято. Если это вы — выберите себя в списке «Я уже в игре».';return;}
+    g.players.push({name:name,fc:fc});
+    g.order=[];
+  });
+  if(err){alert(err);await pull();return;}
+  LS.myName=name;saveLocal();
+  setMsg('Вы в игре, '+name+'!');render();
+}
+function claimName(i){LS.myName=G.players[i].name;saveLocal();setMsg('Вы вошли как '+LS.myName+'.');render();}
+function leaveRoom(){
+  if(!confirm('Отключиться от комнаты на этом устройстве? (Сама игра в облаке останется)'))return;
+  LS={room:'',myName:'',tab:'lobby'};G=null;saveLocal();render();
+}
+function kick(i){
+  if(!isAdmin())return;
+  if(!confirm('Убрать участника «'+G.players[i].name+'»?'))return;
+  mutate(g=>{g.players.splice(i,1);g.order=[];});
+}
+function setFee(v){if(!isAdmin())return;mutate(g=>{g.fee=Math.max(0,parseInt(v)||0);});}
+function toggleReg(){if(!isAdmin())return;mutate(g=>{g.regOpen=!g.regOpen;});}
+function shuffleOrder(){
+  if(!isAdmin())return;
+  mutate(g=>{
+    const a=g.players.map((_,i)=>i);
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}
+    g.order=a;
+  });
+}
+function startDraft(){
+  if(!isAdmin())return;
+  if(G.players.length<2){alert('Нужно минимум 2 участника');return;}
+  if(G.order.length!==G.players.length){alert('Сначала проведите жребий');return;}
+  mutate(g=>{g.phase='draft';g.regOpen=false;});
+  LS.tab='draft';saveLocal();
+}
+function resetAll(){
+  if(!isAdmin())return;
+  if(!confirm('Полный сброс игры для ВСЕХ участников. Точно?'))return;
+  const adm=G.admin,fee=G.fee;
+  mutate(g=>{Object.assign(g,defGame());g.admin=adm;g.fee=fee;g.players=[{name:adm,fc:''}];});
+}
+
+/* ================= ДРАФТ ================= */
+function draftSeq(){
+  const out=[];if(!G||!G.order.length)return out;
+  [['A',1],['B',-1],['C',1]].forEach(rt=>{
+    const o=rt[1]>0?G.order:G.order.slice().reverse();
+    o.forEach(p=>out.push({p:p,t:rt[0]}));
+  });
+  return out;
+}
+function curPick(){const sq=draftSeq();return G.pickLog.length<sq.length?sq[G.pickLog.length]:null;}
+function canPickNow(){
+  const cp=curPick();if(!cp)return false;
+  if(!LS.room)return true;
+  if(isAdmin())return true;
+  return G.players[cp.p]&&G.players[cp.p].name===LS.myName;
+}
+async function pick(tid){
+  if(!canPickNow())return;
+  const cp=curPick();
+  if(G.picks[tid]!==undefined||T[tid].tier!==cp.t)return;
+  await mutate(g=>{
+    const c=(function(){const sq=draftSeq();return g.pickLog.length<sq.length?sq[g.pickLog.length]:null;})();
+    if(!c||T[tid].tier!==c.t||g.picks[tid]!==undefined)return;
+    g.picks[tid]=c.p;g.pickLog.push(tid);
+    if(g.pickLog.length>=draftSeq().length){g.phase='play';}
+  });
+  if(G.phase==='play'){LS.tab='play';saveLocal();render();}
+}
+function addLocalPlayer(){
+  if(LS.room||!isAdmin())return;
+  const name=gv('l_name'),fc=gv('l_fc');
+  if(!name){alert('Введите имя');return;}
+  if(G.players.length>=6){alert('Максимум 6 участников');return;}
+  if(G.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){alert('Имя занято');return;}
+  mutate(g=>{g.players.push({name:name,fc:fc});g.order=[];});
+}
+function undoPick(){
+  if(!isAdmin()||!G.pickLog.length)return;
+  mutate(g=>{
+    const tid=g.pickLog.pop();delete g.picks[tid];
+    if(g.phase==='play')g.phase='draft';
+  });
+  LS.tab='draft';saveLocal();
+}
+
+/* ================= РЕЗУЛЬТАТЫ (ESPN) ================= */
+function stageOf(ev){
+  const s=((ev.season&&ev.season.slug)||'').toLowerCase();
+  if(s.indexOf('group')>=0)return 'group';
+  if(s.indexOf('32')>=0)return 'r32';
+  if(s.indexOf('16')>=0)return 'r16';
+  if(s.indexOf('quarter')>=0)return 'qf';
+  if(s.indexOf('semi')>=0)return 'sf';
+  if(s.indexOf('third')>=0||s.indexOf('3rd')>=0)return 'third';
+  if(s.indexOf('final')>=0)return 'final';
+  const d=(ev.date||'').slice(0,10);
+  if(d<='2026-06-27')return 'group';
+  if(d<='2026-07-03')return 'r32';
+  if(d<='2026-07-08')return 'r16';
+  if(d<='2026-07-13')return 'qf';
+  if(d<='2026-07-16')return 'sf';
+  if(d==='2026-07-18')return 'third';
+  return 'final';
+}
+function applyEventsTo(g,evs){
+  const res={},matches=[];
+  const gt=tid=>res[tid]||(res[tid]={gw:0,gd:0,ko:false,w32:false,w16:false,wqf:false,wsf:false,wf:false});
+  let cnt=0;
+  evs.forEach(ev=>{
+    const st=stageOf(ev);if(st==='third')return;
+    const comp=(ev.competitions&&ev.competitions[0])||{};
+    const cs=comp.competitors||[];if(cs.length<2)return;
+    const ids=cs.map(c=>matchTeam(c.team&&c.team.displayName));
+    if(st!=='group')ids.forEach(id=>{if(id)gt(id).ko=true;});
+    const done=!!(comp.status&&comp.status.type&&comp.status.type.completed)||
+               !!(ev.status&&ev.status.type&&ev.status.type.completed);
+    if(!done)return;
+    cnt++;
+    let wi=cs.findIndex(c=>c.winner===true);
+    matches.push({d:(ev.date||'').slice(5,10),n:ev.name||'',s:cs.map(c=>c.score||'').join(' : '),st:st});
+    if(st==='group'){
+      if(wi<0)ids.forEach(id=>{if(id)gt(id).gd++;});
+      else if(ids[wi])gt(ids[wi]).gw++;
+    }else{
+      if(wi<0){
+        const sc=c=>parseFloat(c.score||0)+(parseFloat(c.shootoutScore||0))/100;
+        const a=sc(cs[0]),b=sc(cs[1]);
+        if(a!==b)wi=a>b?0:1;
+      }
+      const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[st];
+      if(wi>=0&&ids[wi]&&key)gt(ids[wi])[key]=true;
+    }
+  });
+  g.res=res;g.matches=matches.reverse();
+  return cnt;
+}
+async function syncResults(){
+  setMsg('Загружаю результаты…');render();
+  try{
+    const end=new Date(Date.now()+86400000);
+    let to=end.toISOString().slice(0,10).replace(/-/g,'');
+    if(to>'20260801')to='20260801';
+    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-'+to+'&limit=500';
+    const resp=await fetch(url);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    let n=0;
+    await mutate(g=>{n=applyEventsTo(g,data.events||[]);g.lastSync=Date.now();});
+    setMsg('Обновлено: учтено завершённых матчей — '+n+'.');
+  }catch(e){
+    setMsg('Не удалось загрузить ('+e.message+'). Попробуйте позже или внесите результаты вручную.',true);
+  }
+  render();
+}
+
+/* ================= РУЧНОЙ РЕЖИМ ================= */
+function bump(tid,k,d){
+  if(!isAdmin())return;
+  mutate(g=>{const r=(g.res[tid]=g.res[tid]||{gw:0,gd:0});r[k]=Math.max(0,Math.min(3,(r[k]||0)+d));});
+}
+function tglStage(tid,k){
+  if(!isAdmin())return;
+  mutate(g=>{
+    const r=(g.res[tid]=g.res[tid]||{gw:0,gd:0});
+    const i=STAGE_KEYS.indexOf(k);
+    if(r[k]){for(let j=i;j<STAGE_KEYS.length;j++)r[STAGE_KEYS[j]]=false;}
+    else{for(let j=0;j<=i;j++)r[STAGE_KEYS[j]]=true;}
+  });
+}
+
+/* ================= ПРИГЛАШЕНИЕ / ЭКСПОРТ ================= */
+function inviteText(){
+  if(!LS.room)return '';
+  if(location.protocol.indexOf('http')===0){
+    return location.origin+location.pathname+'?room='+LS.room;
+  }
+  return LS.room;
+}
+function copyInvite(){
+  const txt=inviteText();
+  const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');setMsg('Скопировано: '+txt);}catch(e){setMsg('Скопируйте вручную: '+txt);}
+  document.body.removeChild(ta);render();
+}
+function exportState(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(G))));
+  const ta=document.getElementById('excode');
+  if(ta){ta.value=code;ta.select();try{document.execCommand('copy');setMsg('Код состояния скопирован.');}catch(e){}render();
+    const t2=document.getElementById('excode');if(t2)t2.value=code;}
+}
+function importState(){
+  const ta=document.getElementById('excode');if(!ta||!ta.value.trim())return;
+  try{
+    const obj=JSON.parse(decodeURIComponent(escape(atob(ta.value.trim()))));
+    if(!obj.players)throw new Error('bad');
+    mutate(g=>{Object.assign(g,obj);});
+    setMsg('Состояние импортировано.');render();
+  }catch(e){alert('Не удалось прочитать код.');}
+}
+
+/* ================= РЕНДЕР ================= */
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setTab(t){LS.tab=t;saveLocal();render();}
+function tabsHtml(){
+  const can={lobby:true,draft:!!G&&G.phase!=='lobby',play:!!G&&G.phase==='play',rules:true};
+  return [['lobby','1. Лобби'],['draft','2. Драфт'],['play','3. Турнир'],['rules','Правила']].map(it=>
+    '<button '+(can[it[0]]?'':'disabled ')+(LS.tab===it[0]?'class="on" ':'')+
+    'onclick="setTab(\''+it[0]+'\')">'+it[1]+'</button>').join('');
+}
+function hdrHtml(){
+  let h='';
+  if(G){
+    h+='<span class="bank">Банк: <b>'+(G.fee*G.players.length).toLocaleString('ru-RU')+'</b> ('+G.players.length+' × '+G.fee.toLocaleString('ru-RU')+')</span>';
+    if(LS.room)h+='<span class="bank">Комната: <b>'+esc(LS.room)+'</b></span>';
+    if(LS.myName)h+='<span class="bank">Вы: <b>'+esc(LS.myName)+'</b>'+(isAdmin()?' · организатор':'')+'</span>';
+  }
+  return h;
+}
+function msgHtml(){return msg?'<div class="msg'+(msgErr?' err':'')+'">'+esc(msg)+'</div>':'';}
+
+function viewLobby(){
+  let h='';
+  if(!G){
+    h+='<div class="cols2">';
+    h+='<div class="card"><h2>🆕 Создать игру</h2>'+
+      '<div class="fld"><label>Ваше имя (вы — организатор)</label><input type="text" id="c_name"></div>'+
+      '<div class="fld"><label>Прогноз счёта финала (тай-брейк)</label><input type="text" id="c_fc" placeholder="например 2:1"></div>'+
+      '<div class="fld"><label>Взнос с человека</label><input type="number" id="c_fee" value="1000"></div>'+
+      '<div class="row"><button class="btn" onclick="createGame(true)">Создать комнату в облаке</button></div>'+
+      '<div class="hint" style="margin-top:8px">Комната живёт в бесплатном облаке — друзья регистрируются сами по коду. '+
+      '<a href="#" style="color:var(--mut)" onclick="createGame(false);return false">Или играть на одном устройстве →</a></div></div>';
+    h+='<div class="card"><h2>🔑 Присоединиться</h2>'+
+      '<div class="fld"><label>Код комнаты или ссылка-приглашение</label><input type="text" id="j_code" placeholder="jb-… или kv-…"></div>'+
+      '<button class="btn" onclick="joinRoom()">Подключиться</button>'+
+      '<div class="hint" style="margin-top:8px">Код вам пришлёт организатор. После подключения зарегистрируетесь сами.</div></div>';
+    h+='</div>'+msgHtml();
+    return h;
+  }
+  h+=msgHtml();
+  if(LS.room&&!LS.myName){
+    h+='<div class="card"><h2>Кто вы?</h2>';
+    if(G.phase==='lobby'&&G.regOpen&&G.players.length<6){
+      h+='<div class="fld"><label>Ваше имя</label><input type="text" id="r_name"></div>'+
+         '<div class="fld"><label>Прогноз счёта финала (тай-брейк)</label><input type="text" id="r_fc" placeholder="например 2:1"></div>'+
+         '<button class="btn" onclick="registerMe()">Зарегистрироваться</button>'+
+         '<h3>Я уже в игре</h3>';
+    } else {
+      h+='<div class="hint">Регистрация закрыта. Если вы уже в игре — выберите себя:</div><h3></h3>';
+    }
+    h+='<div class="row">'+G.players.map((p,i)=>
+      '<button class="btn sec mini" onclick="claimName('+i+')">'+esc(p.name)+'</button>').join('')+'</div></div>';
+  }
+  h+='<div class="card"><h2>Участники ('+G.players.length+' из 6'+(G.players.length<2?', нужно минимум 2':'')+')</h2><ul class="plist">';
+  G.players.forEach((p,i)=>{
+    h+='<li><span>'+(i+1)+'.</span><b>'+esc(p.name)+'</b>'+
+       (p.name===G.admin?'<span class="tag adm">организатор</span>':'')+
+       (p.name===LS.myName?'<span class="tag">вы</span>':'')+
+       (p.fc?'<span class="hint">финал: '+esc(p.fc)+'</span>':'')+
+       (isAdmin()&&G.phase==='lobby'&&p.name!==G.admin?'<button class="btn danger mini" style="margin-left:auto" onclick="kick('+i+')">✕</button>':'')+
+       '</li>';
+  });
+  h+='</ul>';
+  if(!LS.room&&isAdmin()&&G.phase==='lobby'&&G.players.length<6){
+    h+='<div class="row" style="margin-top:10px">'+
+       '<input type="text" id="l_name" placeholder="Имя" style="width:160px">'+
+       '<input type="text" id="l_fc" placeholder="Счёт финала" style="width:130px">'+
+       '<button class="btn sec mini" onclick="addLocalPlayer()">+ Добавить</button></div>';
+  }
+  h+='<div class="hint" style="margin-top:8px">Регистрация: '+(G.regOpen&&G.phase==='lobby'?'открыта ✅':'закрыта')+'</div></div>';
+
+  if(LS.room){
+    h+='<div class="card"><h2>Приглашение</h2><div class="code">'+esc(inviteText())+'</div>'+
+       '<div class="row" style="margin-top:8px"><button class="btn sec mini" onclick="copyInvite()">📋 Скопировать</button>'+
+       '<button class="btn sec mini" onclick="pull(true)">⟳ Синхронизировать</button>'+
+       '<button class="btn danger mini" onclick="leaveRoom()">Выйти с этого устройства</button></div>'+
+       '<div class="hint" style="margin-top:6px">Если файл опубликован на сайте — отправляйте ссылку, она откроет комнату сразу. Если файл разослан как файл — отправьте код, друзья введут его в «Присоединиться».</div></div>';
+  }
+
+  if(G.phase==='lobby'){
+    if(isAdmin()){
+      h+='<div class="card"><h2>Управление (организатор)</h2>';
+      if(G.order.length===G.players.length&&G.order.length){
+        h+='<div class="hint" style="font-size:15px;color:var(--txt)">Порядок драфта: '+
+          G.order.map((pi,k)=>(k+1)+'. '+esc(G.players[pi]?G.players[pi].name:'?')).join(' → ')+'</div>';
+      } else {
+        h+='<div class="hint">Когда все зарегистрируются — проведите жребий и стартуйте драфт.</div>';
+      }
+      h+='<div class="row" style="margin-top:10px">'+
+        '<button class="btn sec" onclick="shuffleOrder()">🎲 Жребий</button>'+
+        '<button class="btn" onclick="startDraft()" '+(G.order.length===G.players.length&&G.players.length>=2?'':'disabled')+'>▶ Начать драфт</button>'+
+        '<button class="btn sec mini" onclick="toggleReg()">'+(G.regOpen?'Закрыть':'Открыть')+' регистрацию</button></div>'+
+        '<div class="row" style="margin-top:8px"><span class="hint">Взнос:</span>'+
+        '<input type="number" style="width:110px" value="'+G.fee+'" onchange="setFee(this.value)"></div></div>';
+    } else if(LS.myName){
+      h+='<div class="card hint">Ждём, когда организатор ('+esc(G.admin)+') проведёт жребий и запустит драфт. Обновление приходит автоматически.</div>';
+    }
+  } else {
+    h+='<div class="card"><div class="row"><span class="hint">Игра идёт:</span>'+
+       (G.phase==='draft'?'<button class="btn mini" onclick="setTab(\'draft\')">К драфту →</button>':'')+
+       (G.phase==='play'?'<button class="btn mini" onclick="setTab(\'play\')">К таблице →</button>':'')+'</div></div>';
+  }
+
+  if(isAdmin()){
+    h+='<div class="card"><details><summary>🛠 Сервис (организатор)</summary><div class="row" style="margin-top:8px">'+
+       '<button class="btn sec mini" onclick="exportState()">Экспорт состояния</button>'+
+       '<button class="btn sec mini" onclick="importState()">Импорт</button>'+
+       '<button class="btn danger mini" onclick="resetAll()">Полный сброс игры</button></div>'+
+       '<textarea id="excode" rows="3" style="margin-top:8px" placeholder="Код состояния (резервная копия)"></textarea></details></div>';
+  }
+  return h;
+}
+
+function teamBtn(t,clickable){
+  const owner=G.picks[t.id];
+  const taken=owner!==undefined;
+  const ownName=taken?esc((G.players[owner]&&G.players[owner].name)||''):'';
+  return '<button class="tbtn'+(taken?' taken':'')+'" '+
+    ((clickable&&!taken)?'onclick="pick(\''+t.id+'\')"':'disabled')+'>'+
+    '<span class="fl">'+t.fl+'</span><span>'+esc(t.ru)+'<br><small style="color:var(--mut)">гр. '+t.gr+'</small></span>'+
+    (taken?'<span class="own">'+ownName+'</span>':'')+'</button>';
+}
+function viewDraft(){
+  if(!G||G.phase==='lobby')return '<div class="card hint">Драфт ещё не начался.</div>';
+  const cp=curPick();const sq=draftSeq();const mine=canPickNow();
+  let h=msgHtml();
+  if(cp){
+    const nm=esc(G.players[cp.p].name);
+    const meTurn=LS.room?(G.players[cp.p].name===LS.myName):true;
+    h+='<div class="turn'+(meTurn?' me':'')+'">Пик '+(G.pickLog.length+1)+' из '+sq.length+': <b>'+nm+'</b>'+
+       (meTurn&&LS.room?' — ваш ход!':'')+' · корзина <span class="tierbadge b'+cp.t+'">'+cp.t+'</span> '+TIER_NAME[cp.t]+
+       (LS.room?' &nbsp;<button class="btn sec mini" onclick="pull(true)">⟳</button>':'')+
+       (isAdmin()?' <button class="btn sec mini" onclick="undoPick()" '+(G.pickLog.length?'':'disabled')+'>↩ Отменить пик</button>':'')+
+       '</div>';
+    if(!mine&&LS.room)h+='<div class="hint" style="margin-bottom:10px">Выбирать может только '+nm+' (и организатор). Страница обновляется сама каждые 15 секунд.</div>';
+  } else {
+    h+='<div class="turn">Драфт завершён ✔ <button class="btn mini" onclick="setTab(\'play\')">К турниру →</button>'+
+       (isAdmin()?' <button class="btn sec mini" onclick="undoPick()">↩ Отменить последний пик</button>':'')+'</div>';
+  }
+  ['A','B','C'].forEach(tier=>{
+    const act=cp&&cp.t===tier&&mine;
+    h+='<div class="card" style="'+(cp&&cp.t===tier?'border-color:var(--gold)':'')+'">'+
+       '<h2><span class="tierbadge b'+tier+'">'+tier+'</span> '+TIER_NAME[tier]+'</h2><div class="teamgrid">';
+    TEAMS.filter(t=>t.tier===tier).forEach(t=>{h+=teamBtn(t,act);});
+    h+='</div></div>';
+  });
+  return h;
+}
+
+function viewPlay(){
+  if(!G||G.phase!=='play')return '<div class="card hint">Таблица появится после завершения драфта.</div>';
+  let h='<div class="card"><div class="syncbar">'+
+    '<button class="btn" onclick="syncResults()">⟳ Обновить результаты</button>'+
+    '<span class="hint">'+(G.lastSync?('Матчи обновлены: '+new Date(G.lastSync).toLocaleString('ru-RU')):'Ещё не обновлялось')+'</span></div>'+
+    msgHtml()+'</div>';
+
+  const ranks=G.players.map((p,i)=>({i:i,name:p.name,fc:p.fc,sc:playerScore(i)}))
+    .sort((a,b)=>b.sc.total-a.sc.total||b.sc.c-a.sc.c);
+  const medal=['🥇','🥈','🥉'];
+  h+='<div class="lb">';
+  ranks.forEach((r,k)=>{
+    const lead=k===0&&r.sc.total>0;
+    h+='<div class="pcard'+(lead?' lead':'')+'"><div class="phead">'+
+      '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
+      (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
+      '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div><div class="chips">';
+    playerTeams(r.i).forEach(tid=>{
+      const t=T[tid];
+      h+='<span class="chip">'+t.fl+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+         '<span class="p">'+teamPoints(tid)+'</span><span class="st">'+teamStageLabel(tid)+'</span></span>';
+    });
+    h+='</div></div>';
+  });
+  h+='</div>';
+
+  h+='<div class="card">';
+  if(isAdmin()){
+    h+='<details><summary>🔧 Ручная корректировка (организатор)</summary>'+
+       '<div class="hint">На случай сбоя автообновления. Кнопка «Обновить результаты» пересчитывает всё по ESPN и затирает правки.</div>';
+    G.pickLog.slice().sort((a,b)=>T[a].tier<T[b].tier?-1:1).forEach(tid=>{
+      const t=T[tid],r=G.res[tid]||{gw:0,gd:0};
+      h+='<div class="mrow"><span class="tnm">'+t.fl+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span></span>'+
+        '<span class="cnt"><span class="l">В:</span><button onclick="bump(\''+tid+'\',\'gw\',-1)">−</button><span class="v">'+(r.gw||0)+'</span><button onclick="bump(\''+tid+'\',\'gw\',1)">+</button></span>'+
+        '<span class="cnt"><span class="l">Н:</span><button onclick="bump(\''+tid+'\',\'gd\',-1)">−</button><span class="v">'+(r.gd||0)+'</span><button onclick="bump(\''+tid+'\',\'gd\',1)">+</button></span>'+
+        '<span class="stchips">'+
+        [['ko','ПО'],['w32','1/16'],['w16','1/8'],['wqf','1/4'],['wsf','1/2'],['wf','🏆']].map(pp=>
+          '<button class="'+((r[pp[0]])?'on':'')+'" onclick="tglStage(\''+tid+'\',\''+pp[0]+'\')">'+pp[1]+'</button>').join('')+
+        '</span></div>';
+    });
+    h+='</details>';
+  }
+  h+='<details><summary>📋 Завершённые матчи ('+(G.matches||[]).length+')</summary><div class="mlist">'+
+     ((G.matches||[]).length?G.matches.map(m=>'<div><span class="stagepill">'+esc(m.st)+'</span>'+esc(m.d)+' · '+esc(m.n)+' — '+esc(m.s)+'</div>').join(''):'<div>Пока пусто — нажмите «Обновить результаты».</div>')+
+     '</div></details></div>';
+  return h;
+}
+
+function viewRules(){
+  const rows=[['Победа в группе','gw'],['Ничья в группе','gd'],['Выход в плей-офф','ko'],
+   ['Победа в 1/16','w32'],['Победа в 1/8','w16'],['Победа в 1/4','wqf'],['Победа в 1/2','wsf'],['Победа в финале','wf']];
+  return '<div class="card"><h2>Правила</h2><div class="hint" style="font-size:14px;line-height:1.6">'+
+   '1. Каждый вносит взнос — банк забирает победитель по очкам после финала 19 июля.<br>'+
+   '2. Команды разбиты на корзины по букмекерским коэффициентам: <span class="tierbadge bA">A</span> фавориты, '+
+   '<span class="tierbadge bB">B</span> претенденты, <span class="tierbadge bC">C</span> тёмные лошадки.<br>'+
+   '3. Драфт-змейка: раунд 1 — корзина A по жребию, раунд 2 — корзина B в обратном порядке, раунд 3 — корзина C снова по порядку. У каждого 3 сборные.<br>'+
+   '4. Очки начисляются за каждую сборную портфеля по таблице ниже. Матч за 3-е место не учитывается.<br>'+
+   '5. Тай-брейк: больше очков от команды корзины C; затем — точный счёт финала, указанный при регистрации.</div>'+
+   '<table class="ptable"><tr><th>Событие</th><th>A</th><th>B</th><th>C</th></tr>'+
+   rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+P[r[1]].A+'</td><td>'+P[r[1]].B+'</td><td>'+P[r[1]].C+'</td></tr>').join('')+
+   '</table>'+
+   '<h3>Баланс</h3><div class="hint">Фаворит-чемпион ≈ 54 очка. Команде из B для того же нужен титул (75), лошадке из C — минимум финал. Сенсации вознаграждаются, фавориты не обесценены.</div>'+
+   '<h3>Корзины (коэффициенты FanDuel, июнь 2026)</h3>'+
+   '<div class="hint"><b>A:</b> Испания, Франция, Англия, Бразилия, Аргентина, Португалия<br>'+
+   '<b>B:</b> Германия, Нидерланды, Норвегия, Бельгия, Колумбия, Марокко, Уругвай<br>'+
+   '<b>C:</b> остальные 35 сборных</div>'+
+   '<h3>Как устроена комната</h3>'+
+   '<div class="hint">Игра хранится в бесплатном JSON-облаке (jsonblob.com или kvdb.io) — без серверов и аккаунтов. Организатор создаёт комнату и рассылает код или ссылку, участники регистрируются сами. Страница синхронизируется каждые 15 секунд. Резервная копия — «Экспорт состояния» в Лобби. Каждый участник выбирает сборные со своего устройства, когда подходит его очередь.</div></div>';
+}
+
+function render(){
+  document.getElementById('tabs').innerHTML=tabsHtml();
+  document.getElementById('hdr').innerHTML=hdrHtml();
+  const v={lobby:viewLobby,draft:viewDraft,play:viewPlay,rules:viewRules}[LS.tab]||viewLobby;
+  document.getElementById('app').innerHTML=v();
+}
+
+/* ================= СТАРТ ================= */
+(function init(){
+  loadLocal();
+  let qroom='';
+  try{qroom=new URLSearchParams(location.search).get('room')||'';}catch(e){}
+  if(qroom&&qroom!==LS.room){LS.room=qroom.trim();LS.myName='';LS.tab='lobby';G=null;saveLocal();}
+  render();
+  if(LS.room)pull(true);
+  setInterval(function(){
+    if(LS.room&&document.visibilityState==='visible'&&(!G||G.phase!=='play'||LS.tab!=='play'))pull();
+    else if(LS.room&&document.visibilityState==='visible')pull();
+  },15000);
+})();
+</script>
+</body>
+</html>
