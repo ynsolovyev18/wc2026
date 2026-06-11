@@ -92,6 +92,11 @@ table.ptable{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
 .mlist{font-size:13px;color:var(--mut);max-height:300px;overflow-y:auto}
 .mlist div{padding:4px 0;border-bottom:1px solid var(--line)}
 .stagepill{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;margin-right:6px}
+.flg{width:22px;height:auto;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.18);vertical-align:-3px}
+.mp{background:linear-gradient(180deg,#15331f 0%,var(--card) 100%);border-color:#2c5a3c}
+.seg{border-top:1px solid var(--line);padding:10px 0;font-size:14px;line-height:1.6}
+.seg:first-of-type{border-top:none}
+.seghead{font-weight:600;margin-bottom:4px;color:var(--gold)}
 .plist{list-style:none}
 .plist li{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:15px}
 .plist li:last-child{border-bottom:none}
@@ -179,6 +184,15 @@ const TEAMS = [
  {id:'pan',ru:'Панама',en:'Panama',fl:'🇵🇦',gr:'L',tier:'C'}
 ];
 const T = {}; TEAMS.forEach(t=>T[t.id]=t);
+const ISO={esp:'es',fra:'fr',eng:'gb-eng',bra:'br',arg:'ar',por:'pt',ger:'de',ned:'nl',nor:'no',
+ bel:'be',col:'co',mar:'ma',uru:'uy',usa:'us',sui:'ch',jpn:'jp',mex:'mx',cro:'hr',ecu:'ec',
+ sen:'sn',swe:'se',cze:'cz',kor:'kr',rsa:'za',bih:'ba',can:'ca',qat:'qa',hai:'ht',sco:'gb-sct',
+ aus:'au',par:'py',tur:'tr',cuw:'cw',civ:'ci',tun:'tn',egy:'eg',irn:'ir',nzl:'nz',cpv:'cv',
+ ksa:'sa',irq:'iq',alg:'dz',aut:'at',jor:'jo',cod:'cd',uzb:'uz',gha:'gh',pan:'pa'};
+TEAMS.forEach(t=>{t.iso=ISO[t.id];});
+function flagHtml(t){
+  return '<img class="flg" src="https://flagcdn.com/24x18/'+t.iso+'.png" srcset="https://flagcdn.com/48x36/'+t.iso+'.png 2x" alt="" onerror="this.replaceWith(\''+t.fl+'\')">';
+}
 
 function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
   .replace(/['’.]/g,'').replace(/\s+/g,' ').trim();}
@@ -195,7 +209,7 @@ let LS={room:'',myName:'',tab:'lobby'};
 let G=null;
 let msg='',msgErr=false,pendingPush=false;
 
-function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:1000,regOpen:true,phase:'lobby',
+function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:5000,regOpen:true,phase:'lobby',
   players:[],order:[],picks:{},pickLog:[],res:{},matches:[],lastSync:null};}
 function loadLocal(){
   try{const raw=localStorage.getItem(KEY);
@@ -284,7 +298,7 @@ function playerScore(pi){
 /* ================= ЛОББИ: СОЗДАНИЕ / РЕГИСТРАЦИЯ ================= */
 function gv(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 async function createGame(cloud){
-  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||1000,email=gv('c_email');
+  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||5000,email=gv('c_email');
   if(!name){alert('Введите имя');return;}
   if(cloud&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert('Введите корректный email — он нужен облачному хранилищу для создания комнаты');return;}
   const g=defGame();g.admin=name;g.fee=fee;g.players=[{name:name,fc:fc}];g.rev=1;g.updated=Date.now();
@@ -443,16 +457,17 @@ function applyEventsTo(g,evs){
     if(!done)return;
     cnt++;
     let wi=cs.findIndex(c=>c.winner===true);
-    matches.push({d:(ev.date||'').slice(5,10),n:ev.name||'',s:cs.map(c=>c.score||'').join(' : '),st:st});
+    if(wi<0&&st!=='group'){
+      const sc=c=>parseFloat(c.score||0)+(parseFloat(c.shootoutScore||0))/100;
+      const a=sc(cs[0]),b=sc(cs[1]);
+      if(a!==b)wi=a>b?0:1;
+    }
+    matches.push({d:(ev.date||'').slice(5,10),n:ev.name||'',s:cs.map(c=>c.score||'').join(' : '),st:st,
+      a:ids[0]||null,b:ids[1]||null,w:(wi>=0?(ids[wi]||null):null)});
     if(st==='group'){
       if(wi<0)ids.forEach(id=>{if(id)gt(id).gd++;});
       else if(ids[wi])gt(ids[wi]).gw++;
     }else{
-      if(wi<0){
-        const sc=c=>parseFloat(c.score||0)+(parseFloat(c.shootoutScore||0))/100;
-        const a=sc(cs[0]),b=sc(cs[1]);
-        if(a!==b)wi=a>b?0:1;
-      }
       const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[st];
       if(wi>=0&&ids[wi]&&key)gt(ids[wi])[key]=true;
     }
@@ -492,6 +507,86 @@ function tglStage(tid,k){
     if(r[k]){for(let j=i;j<STAGE_KEYS.length;j++)r[STAGE_KEYS[j]]=false;}
     else{for(let j=0;j<=i;j++)r[STAGE_KEYS[j]]=true;}
   });
+}
+
+/* ================= ИТОГИ ТУРОВ ================= */
+const LUCK=['{n} наколдовал {p} — букмекеры уже интересуются его телефоном',
+ '{n}: {p}. Совпадение? Не думаем',
+ '{n} собрал {p} и теперь ходит с видом эксперта',
+ '{p} у {n} — сборные пашут, человек отдыхает'];
+const LOSE=['{n}: {p}. Сборные взяли выходной всем составом',
+ '{n} заработал {p} — зато никто не завидует',
+ '{n}: {p}. Держись, дальше только лучше… наверное',
+ '{n}: {p}. В следующий раз монетка ляжет правильно'];
+function phr(arr,seed){let s=0;for(let i=0;i<seed.length;i++)s+=seed.charCodeAt(i);return arr[s%arr.length];}
+function segOfMatch(m){if(m.st==='group'){if(m.d<='06-17')return 't1';if(m.d<='06-23')return 't2';return 't3';}return m.st;}
+function itogiHtml(){
+  if(!G||G.phase!=='play')return '';
+  const SEGDEF=[['t1','Тур 1 · группы'],['t2','Тур 2 · группы'],['t3','Тур 3 · группы'],
+   ['r32','1/16 финала'],['r16','1/8 финала'],['qf','Четвертьфиналы'],['sf','Полуфиналы'],['final','Финал']];
+  const sp={},losses={};
+  (G.matches||[]).forEach(m=>{
+    if(!m.a&&!m.b)return;
+    const seg=segOfMatch(m);
+    const add=(tid,pts)=>{if(!tid)return;const pi=G.picks[tid];if(pi===undefined)return;
+      sp[seg]=sp[seg]||{};sp[seg][pi]=(sp[seg][pi]||0)+pts;};
+    if(m.st==='group'){
+      if(m.w)add(m.w,P.gw[T[m.w].tier]);
+      else{add(m.a,P.gd[T[m.a].tier]);add(m.b,P.gd[T[m.b].tier]);}
+    }else{
+      if(seg==='r32'){add(m.a,P.ko[T[m.a].tier]);add(m.b,P.ko[T[m.b].tier]);}
+      const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[seg];
+      if(m.w&&key)add(m.w,P[key][T[m.w].tier]);
+      if(m.w){const l=(m.w===m.a?m.b:m.a);
+        if(l&&G.picks[l]!==undefined){losses[seg]=losses[seg]||[];losses[seg].push(l);}}
+    }
+  });
+  const today=new Date().toISOString().slice(5,10);
+  const exp={r32:16,r16:8,qf:4,sf:2,'final':1};
+  const end={t1:'06-17',t2:'06-23',t3:'06-27'};
+  let cards='';
+  SEGDEF.slice().reverse().forEach(sd=>{
+    const seg=sd[0];
+    if(!sp[seg]&&!losses[seg])return;
+    const segMatches=(G.matches||[]).filter(m=>(m.a||m.b)&&segOfMatch(m)===seg).length;
+    const fin=end[seg]?(today>end[seg]):(segMatches>=exp[seg]);
+    const pts=G.players.map((p,i)=>({name:p.name,v:(sp[seg]&&sp[seg][i])||0})).sort((a,b)=>b.v-a.v);
+    let body='';
+    if(pts.length>1&&pts[0].v!==pts[pts.length-1].v){
+      const mx=pts[0],mn=pts[pts.length-1];
+      body+='<div>🍀 '+phr(LUCK,seg+mx.name).replace('{n}','<b>'+esc(mx.name)+'</b>').replace('{p}','+'+mx.v)+'</div>';
+      body+='<div>🥶 '+phr(LOSE,seg+mn.name).replace('{n}','<b>'+esc(mn.name)+'</b>').replace('{p}','+'+mn.v)+'</div>';
+    }else{
+      body+='<div>⚖️ Все набрали поровну (+'+(pts[0]?pts[0].v:0)+') — справедливо до скуки.</div>';
+    }
+    if(losses[seg]&&losses[seg].length){
+      body+='<div>⚰️ Потери: '+losses[seg].map(tid=>flagHtml(T[tid])+' '+esc(T[tid].ru)+
+        ' ('+esc((G.players[G.picks[tid]]||{}).name||'')+')').join(', ')+'</div>';
+    }
+    body+='<div class="hint">'+pts.map(x=>esc(x.name)+' +'+x.v).join(' · ')+'</div>';
+    cards+='<div class="seg"><div class="seghead">'+sd[1]+(fin?'':' <span class="tag">ещё идёт</span>')+'</div>'+body+'</div>';
+  });
+  if(!cards)return '';
+  return '<div class="card"><h2>🎭 Итоги туров</h2>'+cards+'</div>';
+}
+
+/* ================= МОЙ ПОРТФЕЛЬ ================= */
+function myPanelHtml(){
+  if(!G||!LS.room)return '';
+  const mi=myIdx();
+  if(mi<0)return '';
+  const mine=playerTeams(mi);
+  if(!mine.length)return '';
+  let total=0;
+  const chips=mine.map(tid=>{
+    const t=T[tid],p=teamPoints(tid);total+=p;
+    return '<span class="chip">'+flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+      '<span class="p">'+p+'</span><span class="st">'+teamStageLabel(tid)+'</span></span>';
+  }).join('');
+  const need=3-mine.length;
+  return '<div class="card mp"><div class="row" style="justify-content:space-between">'+
+    '<b>⭐ Мои сборные ('+esc(LS.myName)+')</b><span style="font-size:18px;font-weight:700;color:var(--gold)">'+total+' очк.</span></div>'+
+    '<div class="chips">'+chips+(need>0?'<span class="hint">ещё '+need+' пик(а) впереди</span>':'')+'</div></div>';
 }
 
 /* ================= ПРИГЛАШЕНИЕ / ЭКСПОРТ ================= */
@@ -551,7 +646,7 @@ function viewLobby(){
     h+='<div class="card"><h2>🆕 Создать игру</h2>'+
       '<div class="fld"><label>Ваше имя (вы — организатор)</label><input type="text" id="c_name"></div>'+
       '<div class="fld"><label>Прогноз счёта финала (тай-брейк)</label><input type="text" id="c_fc" placeholder="например 2:1"></div>'+
-      '<div class="fld"><label>Взнос с человека</label><input type="number" id="c_fee" value="1000"></div>'+
+      '<div class="fld"><label>Взнос с человека</label><input type="number" id="c_fee" value="5000"></div>'+
       '<div class="fld"><label>Ваш email (нужен хранилищу kvdb.io для создания комнаты)</label><input type="text" id="c_email" placeholder="you@example.com"></div>'+
       '<div class="row"><button class="btn" onclick="createGame(true)">Создать комнату в облаке</button></div>'+
       '<div class="hint" style="margin-top:8px">Комната живёт в бесплатном облаке — друзья регистрируются сами по коду. '+
@@ -643,7 +738,7 @@ function teamBtn(t,clickable){
   const ownName=taken?esc((G.players[owner]&&G.players[owner].name)||''):'';
   return '<button class="tbtn'+(taken?' taken':'')+'" '+
     ((clickable&&!taken)?'onclick="pick(\''+t.id+'\')"':'disabled')+'>'+
-    '<span class="fl">'+t.fl+'</span><span>'+esc(t.ru)+'<br><small style="color:var(--mut)">гр. '+t.gr+'</small></span>'+
+    '<span class="fl">'+flagHtml(t)+'</span><span>'+esc(t.ru)+'<br><small style="color:var(--mut)">гр. '+t.gr+'</small></span>'+
     (taken?'<span class="own">'+ownName+'</span>':'')+'</button>';
 }
 function viewDraft(){
@@ -692,12 +787,14 @@ function viewPlay(){
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div><div class="chips">';
     playerTeams(r.i).forEach(tid=>{
       const t=T[tid];
-      h+='<span class="chip">'+t.fl+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+      h+='<span class="chip">'+flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
          '<span class="p">'+teamPoints(tid)+'</span><span class="st">'+teamStageLabel(tid)+'</span></span>';
     });
     h+='</div></div>';
   });
   h+='</div>';
+
+  h+=itogiHtml();
 
   h+='<div class="card">';
   if(isAdmin()){
@@ -705,7 +802,7 @@ function viewPlay(){
        '<div class="hint">На случай сбоя автообновления. Кнопка «Обновить результаты» пересчитывает всё по ESPN и затирает правки.</div>';
     G.pickLog.slice().sort((a,b)=>T[a].tier<T[b].tier?-1:1).forEach(tid=>{
       const t=T[tid],r=G.res[tid]||{gw:0,gd:0};
-      h+='<div class="mrow"><span class="tnm">'+t.fl+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span></span>'+
+      h+='<div class="mrow"><span class="tnm">'+flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span></span>'+
         '<span class="cnt"><span class="l">В:</span><button onclick="bump(\''+tid+'\',\'gw\',-1)">−</button><span class="v">'+(r.gw||0)+'</span><button onclick="bump(\''+tid+'\',\'gw\',1)">+</button></span>'+
         '<span class="cnt"><span class="l">Н:</span><button onclick="bump(\''+tid+'\',\'gd\',-1)">−</button><span class="v">'+(r.gd||0)+'</span><button onclick="bump(\''+tid+'\',\'gd\',1)">+</button></span>'+
         '<span class="stchips">'+
@@ -747,7 +844,7 @@ function render(){
   document.getElementById('tabs').innerHTML=tabsHtml();
   document.getElementById('hdr').innerHTML=hdrHtml();
   const v={lobby:viewLobby,draft:viewDraft,play:viewPlay,rules:viewRules}[LS.tab]||viewLobby;
-  document.getElementById('app').innerHTML=v();
+  document.getElementById('app').innerHTML=myPanelHtml()+v();
 }
 
 /* ================= СТАРТ ================= */
