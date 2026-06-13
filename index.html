@@ -863,7 +863,7 @@ function viewRules(){
 function latePickHtml(){
   const mi=myIdx();
   if(mi<0||!G)return '';
-  if(G.phase!=='play'&&G.phase!=='draft')return '';
+  if(G.phase!=='play')return '';
   if(G.order.length&&G.order.includes(mi))return '';
   const mine=playerTeams(mi);
   if(mine.length>=3)return '';
