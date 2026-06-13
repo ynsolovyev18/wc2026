@@ -339,8 +339,8 @@ async function registerMe(){
   let err='';
   await mutate(g=>{
     const inLobby=g.phase==='lobby';
-    const canReg=inLobby?g.regOpen:g.lateOpen;
-    if(!canReg){err='Регистрация закрыта';return;}
+    const canReg=inLobby?g.regOpen:(g.lateOpen&&g.phase==='play');
+    if(!canReg){err=(g.lateOpen&&g.phase==='draft')?'Подождите окончания драфта — тогда сможете присоединиться':'Регистрация закрыта';return;}
     if(g.players.length>=6){err='Уже 6 участников — мест нет';return;}
     if(g.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){err='Имя занято. Если это вы — выберите себя в списке «Я уже в игре».';return;}
     g.players.push({name:name,fc:fc});
@@ -362,7 +362,7 @@ function kick(i){
 }
 function setFee(v){if(!isAdmin())return;mutate(g=>{g.fee=Math.max(0,parseInt(v)||0);});}
 function toggleReg(){if(!isAdmin())return;mutate(g=>{g.regOpen=!g.regOpen;});}
-function toggleLateJoin(){if(!isAdmin())return;mutate(g=>{g.lateOpen=!g.lateOpen;});}
+function toggleLateJoin(){if(!isAdmin()||!G||G.phase!=='play')return;mutate(g=>{g.lateOpen=!g.lateOpen;});}
 function shuffleOrder(){
   if(!isAdmin())return;
   mutate(g=>{
@@ -739,7 +739,7 @@ function viewLobby(){
   } else {
     h+='<div class="card"><div class="row"><span class="hint">Игра идёт:</span>'+
        (G.phase==='draft'?'<button class="btn mini" onclick="setTab(\'draft\')">К драфту →</button>':'')+
-       (G.phase==='play'?'<button class="btn mini" onclick="setTab(\'play\')">К таблице →</button>':'')+(isAdmin()?' <button class="btn sec mini" onclick="toggleLateJoin()">'+(G.lateOpen?'🔓 Поздняя рег.: вкл':'🔒 Открыть позднюю рег.')+'</button>':'')+'</div>'+(G.lateOpen?'<div class="hint" style="margin-top:6px;color:var(--gold)">⚡ Поздняя регистрация открыта.</div>':'')+'</div>';
+       (G.phase==='play'?'<button class="btn mini" onclick="setTab(\'play\')">К таблице →</button>':'')+(isAdmin()&&G.phase==='play'?' <button class="btn sec mini" onclick="toggleLateJoin()">'+(G.lateOpen?'🔓 Поздняя рег.: вкл':'🔒 Открыть позднюю рег.')+'</button>':'')+'</div>'+(G.lateOpen?'<div class="hint" style="margin-top:6px;color:var(--gold)">⚡ Поздняя регистрация открыта.</div>':'')+'</div>';
   }
 
   if(isAdmin()){
