@@ -209,7 +209,7 @@ let LS={room:'',myName:'',tab:'lobby'};
 let G=null;
 let msg='',msgErr=false,pendingPush=false;
 
-function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:5000,regOpen:true,phase:'lobby',
+function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:5000,regOpen:true,lateOpen:false,phase:'lobby',
   players:[],order:[],picks:{},pickLog:[],res:{},matches:[],lastSync:null};}
 function loadLocal(){
   try{const raw=localStorage.getItem(KEY);
@@ -338,11 +338,13 @@ async function registerMe(){
   if(!name){alert('Введите имя');return;}
   let err='';
   await mutate(g=>{
-    if(g.phase!=='lobby'||!g.regOpen){err='Регистрация закрыта';return;}
+    const inLobby=g.phase==='lobby';
+    const canReg=inLobby?g.regOpen:g.lateOpen;
+    if(!canReg){err='Регистрация закрыта';return;}
     if(g.players.length>=6){err='Уже 6 участников — мест нет';return;}
     if(g.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){err='Имя занято. Если это вы — выберите себя в списке «Я уже в игре».';return;}
     g.players.push({name:name,fc:fc});
-    g.order=[];
+    if(inLobby)g.order=[];
   });
   if(err){alert(err);await pull();return;}
   LS.myName=name;saveLocal();
@@ -360,6 +362,7 @@ function kick(i){
 }
 function setFee(v){if(!isAdmin())return;mutate(g=>{g.fee=Math.max(0,parseInt(v)||0);});}
 function toggleReg(){if(!isAdmin())return;mutate(g=>{g.regOpen=!g.regOpen;});}
+function toggleLateJoin(){if(!isAdmin())return;mutate(g=>{g.lateOpen=!g.lateOpen;});}
 function shuffleOrder(){
   if(!isAdmin())return;
   mutate(g=>{
@@ -409,6 +412,19 @@ async function pick(tid){
     if(g.pickLog.length>=draftSeq().length){g.phase='play';}
   });
   if(G.phase==='play'){LS.tab='play';saveLocal();render();}
+}
+async function latePick(tid){
+  const mi=myIdx();if(mi<0)return;
+  if(G.picks[tid]!==undefined)return;
+  if(playerTeams(mi).length>=3)return;
+  await mutate(g=>{
+    if(g.picks[tid]!==undefined)return;
+    const mine=Object.keys(g.picks).filter(t=>g.picks[t]===mi);
+    if(mine.length>=3)return;
+    g.picks[tid]=mi;
+    if(!g.pickLog.includes(tid))g.pickLog.push(tid);
+  });
+  render();
 }
 function addLocalPlayer(){
   if(LS.room||!isAdmin())return;
@@ -665,7 +681,7 @@ function viewLobby(){
   h+=msgHtml();
   if(LS.room&&!LS.myName){
     h+='<div class="card"><h2>Кто вы?</h2>';
-    if(G.phase==='lobby'&&G.regOpen&&G.players.length<6){
+    if(((G.phase==='lobby'&&G.regOpen)||G.lateOpen)&&G.players.length<6){
       h+='<div class="fld"><label>Ваше имя</label><input type="text" id="r_name"></div>'+
          '<div class="fld"><label>Прогноз счёта финала (тай-брейк)</label><input type="text" id="r_fc" placeholder="например 2:1"></div>'+
          '<button class="btn" onclick="registerMe()">Зарегистрироваться</button>'+
@@ -723,7 +739,7 @@ function viewLobby(){
   } else {
     h+='<div class="card"><div class="row"><span class="hint">Игра идёт:</span>'+
        (G.phase==='draft'?'<button class="btn mini" onclick="setTab(\'draft\')">К драфту →</button>':'')+
-       (G.phase==='play'?'<button class="btn mini" onclick="setTab(\'play\')">К таблице →</button>':'')+'</div></div>';
+       (G.phase==='play'?'<button class="btn mini" onclick="setTab(\'play\')">К таблице →</button>':'')+(isAdmin()?' <button class="btn sec mini" onclick="toggleLateJoin()">'+(G.lateOpen?'🔓 Поздняя рег.: вкл':'🔒 Открыть позднюю рег.')+'</button>':'')+'</div>'+(G.lateOpen?'<div class="hint" style="margin-top:6px;color:var(--gold)">⚡ Поздняя регистрация открыта.</div>':'')+'</div>';
   }
 
   if(isAdmin()){
@@ -844,11 +860,36 @@ function viewRules(){
    '<div class="hint">Игра хранится в бесплатном JSON-облаке (kvdb.io) — без серверов и аккаунтов, организатору нужен только email. Организатор создаёт комнату и рассылает код или ссылку, участники регистрируются сами. Страница синхронизируется каждые 15 секунд. Резервная копия — «Экспорт состояния» в Лобби. Каждый участник выбирает сборные со своего устройства, когда подходит его очередь.</div></div>';
 }
 
+function latePickHtml(){
+  const mi=myIdx();
+  if(mi<0||!G)return '';
+  if(G.phase!=='play'&&G.phase!=='draft')return '';
+  if(G.order.length&&G.order.includes(mi))return '';
+  const mine=playerTeams(mi);
+  if(mine.length>=3)return '';
+  const available=TEAMS.filter(t=>G.picks[t.id]===undefined);
+  const needed=3-mine.length;
+  let h='<div class="card" style="border-color:var(--gold);margin-bottom:14px"><h2>🎯 Выберите свои сборные</h2>';
+  h+='<div class="hint" style="margin-bottom:10px">Нужно выбрать ещё <b>'+needed+'</b> команд'+(needed===1?'у':'')+' из тех, что остались после драфта — любой тир. Первым занял — первым взял.</div>';
+  if(mine.length){h+='<div class="hint" style="margin-bottom:10px">Уже выбрано: '+mine.map(tid=>flagHtml(T[tid])+' '+esc(T[tid].ru)).join(', ')+'</div>';}
+  if(!available.length){h+='<div class="hint" style="color:var(--red)">Все команды разобраны 😢 Свяжитесь с организатором.</div></div>';return h;}
+  ['A','B','C'].forEach(tier=>{
+    const av=available.filter(t=>t.tier===tier);
+    if(!av.length)return;
+    h+='<div style="margin-bottom:6px"><span class="tierbadge b'+tier+'" style="margin-right:4px">'+tier+'</span><b>'+TIER_NAME[tier]+'</b></div>';
+    h+='<div class="teamgrid" style="margin-bottom:12px">';
+    av.forEach(t=>{h+='<button class="tbtn" onclick="latePick(\''+t.id+'\')">'+
+      '<span class="fl">'+flagHtml(t)+'</span><span>'+esc(t.ru)+'<br><small style="color:var(--mut)">гр. '+t.gr+'</small></span></button>';});
+    h+='</div>';
+  });
+  h+='</div>';
+  return h;
+}
 function render(){
   document.getElementById('tabs').innerHTML=tabsHtml();
   document.getElementById('hdr').innerHTML=hdrHtml();
   const v={lobby:viewLobby,draft:viewDraft,play:viewPlay,rules:viewRules}[LS.tab]||viewLobby;
-  document.getElementById('app').innerHTML=myPanelHtml()+v();
+  document.getElementById('app').innerHTML=myPanelHtml()+latePickHtml()+v();
 }
 
 /* ================= СТАРТ ================= */
