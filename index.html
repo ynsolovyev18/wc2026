@@ -1006,7 +1006,7 @@ function render(){
   document.getElementById('tabs').innerHTML=tabsHtml();
   document.getElementById('hdr').innerHTML=hdrHtml();
   const v={lobby:viewLobby,draft:viewDraft,play:viewPlay,rules:viewRules}[LS.tab]||viewLobby;
-  document.getElementById('app').innerHTML=myPanelHtml()+latePickHtml()+v();
+  document.getElementById('app').innerHTML=myPanelHtml()+v();
 }
 
 /* ================= СТАРТ ================= */
