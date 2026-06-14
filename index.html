@@ -292,7 +292,7 @@ function teamStageLabel(tid){
   for(let i=STAGE_KEYS.length-1;i>=0;i--){if(r[STAGE_KEYS[i]])return STAGE_LBL[STAGE_KEYS[i]];}
   return 'группа';
 }
-function playerTeams(pi){return G.pickLog.filter(tid=>G.picks[tid]===pi);}
+function playerTeams(pi){return Object.keys(G.picks).filter(tid=>G.picks[tid]===pi);}
 function playerScore(pi){
   let total=0,c=0;
   playerTeams(pi).forEach(tid=>{const p=teamPoints(tid);total+=p;if(T[tid].tier==='C')c+=p;});
