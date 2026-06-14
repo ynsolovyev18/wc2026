@@ -898,7 +898,7 @@ async function fetchUpcoming(){
     upcomingMatches=(data.events||[]).filter(ev=>{
       const comp=(ev.competitions&&ev.competitions[0])||{};
       if(comp.status&&comp.status.type&&comp.status.type.completed)return false;
-      if(new Date(ev.date).getTime()<now-3600000)return false;
+      if(!(comp.status&&comp.status.type&&comp.status.type.state==='in')&&new Date(ev.date).getTime()<now-3600000)return false;
       const ids=(comp.competitors||[]).map(c=>matchTeam(c.team&&c.team.displayName));
       return ids.some(id=>id&&G.picks[id]!==undefined);
     }).slice(0,20).map(ev=>{
