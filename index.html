@@ -807,11 +807,14 @@ function viewPlay(){
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
     const myTeams=playerTeams(r.i);
+    const pending=pendingTeams();
     h+='<div class="chips">';
     myTeams.forEach(tid=>{
       const t=T[tid],pts=teamPoints(tid);
-      h+='<span class="chip" style="cursor:pointer" title="Нажмите для деталей" onclick="toggleExpand(\'' +tid+ '\')">'+
-         flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+      const ip=pending.has(tid);
+      h+='<span class="chip" style="cursor:pointer;'+(ip?'opacity:0.42;filter:grayscale(0.4)':'')+'" title="'+(ip?'Матч ещё не сыгран':'Нажмите для деталей')+'" onclick="toggleExpand(\'' +tid+ '\')">'+
+         flagHtml(t)+' '+esc(t.ru)+(ip?' <span style="font-size:10px">⏳</span>':'')+
+         ' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
          '<span class="p">'+pts+'</span><span class="st">'+teamStageLabel(tid)+'</span>'+
          '<span style="font-size:10px;opacity:.55;margin-left:2px">'+(EXP.has(tid)?'▲':'▼')+'</span></span>';
     });
@@ -872,6 +875,17 @@ function viewRules(){
 const EXP=new Set();
 function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
 let upcomingMatches=[];
+let upcomingOpen=false;
+function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
+function pendingTeams(){
+  const now=Date.now();
+  const s=new Set();
+  upcomingMatches.forEach(m=>{
+    const t=new Date(m.date).getTime();
+    if(!m.live&&t>=now&&t<now+48*3600000){if(m.a)s.add(m.a);if(m.b)s.add(m.b);}
+  });
+  return s;
+}
 async function fetchUpcoming(){
   if(!G||G.phase!=='play')return;
   try{
@@ -892,7 +906,10 @@ async function fetchUpcoming(){
       const cs=comp.competitors||[];
       const ids=cs.map(c=>matchTeam(c.team&&c.team.displayName));
       const live=!!(comp.status&&comp.status.type&&comp.status.type.state==='in');
-      return {date:ev.date,a:ids[0]||null,b:ids[1]||null,st:stageOf(ev),live};
+      const sc0=cs[0]?cs[0].score||'0':'0';
+      const sc1=cs[1]?cs[1].score||'0':'0';
+      const minute=(comp.status&&comp.status.displayClock)||'';
+      return {date:ev.date,a:ids[0]||null,b:ids[1]||null,st:stageOf(ev),live,score:sc0+':'+sc1,minute};
     });
     render();
   }catch(e){}
@@ -929,63 +946,62 @@ function teamMatchesHtml(tid){
 /* ================= ПРЕДСТОЯЩИЕ МАТЧИ ================= */
 function upcomingHtml(){
   if(!upcomingMatches.length)return '';
+  const liveMs=upcomingMatches.filter(m=>m.live);
+  const upMs=upcomingMatches.filter(m=>!m.live);
+  if(!liveMs.length&&!upMs.length)return '';
   const isPvp=m=>{
     const pA=m.a!==null&&G.picks[m.a]!==undefined?G.picks[m.a]:-1;
     const pB=m.b!==null&&G.picks[m.b]!==undefined?G.picks[m.b]:-1;
     return pA>=0&&pB>=0&&pA!==pB;
   };
+  function tSpan(tid,pi){
+    return (tid&&T[tid]?flagHtml(T[tid])+' <b style="font-size:13px">'+esc(T[tid].ru)+'</b>':'?')+
+           (pi>=0?'<span style="font-size:11px;color:var(--gold)">('+esc((G.players[pi]||{}).name||'')+')</span>':'');
+  }
   function mRow(m){
     const pA=m.a!==null&&G.picks[m.a]!==undefined?G.picks[m.a]:-1;
     const pB=m.b!==null&&G.picks[m.b]!==undefined?G.picks[m.b]:-1;
     const pvp=pA>=0&&pB>=0&&pA!==pB;
     const dt=new Date(m.date);
     const msk=dt.toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-    return '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:'+(pvp?'8px 10px':'5px 2px')+
-      ';margin-bottom:'+(pvp?'6px':'0')+
-      ';'+(pvp?'background:rgba(232,196,107,0.1);border:1px solid var(--gold);border-radius:10px':'border-bottom:1px solid var(--line)')+'">'+
-      '<span style="color:var(--mut);font-size:12px;min-width:90px">'+esc(msk)+' МСК</span>'+
-      (m.a&&T[m.a]?flagHtml(T[m.a])+' <b style="font-size:13px">'+esc(T[m.a].ru)+'</b>':'?')+
-      (pA>=0?'<span style="font-size:11px;color:var(--gold)">('+esc((G.players[pA]||{}).name||'')+')</span>':'')+
+    const border=pvp?'background:rgba(232,196,107,0.1);border:1px solid var(--gold);border-radius:10px':
+                 m.live?'background:rgba(224,122,106,0.08);border:1px solid rgba(224,122,106,0.35);border-radius:8px':
+                 'border-bottom:1px solid var(--line)';
+    const leftCol=m.live
+      ?'<span style="background:var(--red);color:#fff;border-radius:5px;padding:2px 6px;font-size:11px;font-weight:700;white-space:nowrap">● LIVE '+esc(m.score||'')+(m.minute?' '+esc(m.minute)+'\' ':'')+' </span>'
+      :'<span style="color:var(--mut);font-size:12px;min-width:90px;white-space:nowrap">'+esc(msk)+' МСК</span>';
+    return '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:'+(pvp||m.live?'8px 10px':'5px 2px')+';margin-bottom:4px;'+border+'">'+
+      leftCol+tSpan(m.a,pA)+
       '<span style="color:var(--mut)">vs</span>'+
-      (m.b&&T[m.b]?flagHtml(T[m.b])+' <b style="font-size:13px">'+esc(T[m.b].ru)+'</b>':'?')+
-      (pB>=0?'<span style="font-size:11px;color:var(--gold)">('+esc((G.players[pB]||{}).name||'')+')</span>':'')+
+      tSpan(m.b,pB)+
       (pvp?'<span style="margin-left:auto;font-size:13px">⚔️</span>':'')+
       '</div>';
   }
-  const pvpMs=upcomingMatches.filter(isPvp);
-  const rest=upcomingMatches.filter(m=>!isPvp(m));
-  let h='<div class="card"><h2>📅 Предстоящие матчи</h2>';
-  if(pvpMs.length){h+='<div class="hint" style="color:var(--gold);font-weight:600;margin-bottom:8px">⚔️ Дуэли игроков</div>';pvpMs.forEach(m=>{h+=mRow(m);});}
-  if(rest.length){if(pvpMs.length)h+='<div class="hint" style="margin:8px 0 6px">Другие матчи</div>';rest.forEach(m=>{h+=mRow(m);});}
-  h+='<button class="btn sec mini" style="margin-top:10px" onclick="fetchUpcoming()">⟳ Обновить</button></div>';
+  let h='<div class="card">';
+  if(liveMs.length){
+    h+='<h2 style="margin-bottom:8px">🔴 Идут сейчас</h2>';
+    liveMs.forEach(m=>{h+=mRow(m);});
+    if(upMs.length)h+='<div style="margin:10px 0 0"></div>';
+  }
+  if(upMs.length){
+    const n=upMs.length;
+    const hasPvp=upMs.some(isPvp);
+    const form=n===1?'матч':n<5?'матча':'матчей';
+    const summary=(hasPvp?'⚔️ есть дуэли · ':'')+n+' '+form;
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;border-top:'+(liveMs.length?'1px solid var(--line)':'none')+'" onclick="toggleUpcoming()">'+
+       '<h2 style="margin:0;font-size:15px">📅 Предстоящие <span style="font-size:12px;font-weight:400;color:var(--mut)">('+summary+')</span></h2>'+
+       '<span style="color:var(--mut);font-size:13px;margin-left:8px">'+(upcomingOpen?'▲':'▼')+'</span></div>';
+    if(upcomingOpen){
+      const pvpMs=upMs.filter(isPvp);
+      const rest=upMs.filter(m=>!isPvp(m));
+      if(pvpMs.length){h+='<div class="hint" style="color:var(--gold);font-weight:600;margin:4px 0">⚔️ Дуэли игроков</div>';pvpMs.forEach(m=>{h+=mRow(m);});}
+      if(rest.length){if(pvpMs.length)h+='<div class="hint" style="margin:8px 0 4px">Другие матчи</div>';rest.forEach(m=>{h+=mRow(m);});}
+    }
+  }
+  h+='<button class="btn sec mini" style="margin-top:8px" onclick="fetchUpcoming()">⟳ Обновить</button></div>';
   return h;
 }
 
-function latePickHtml(){
-  const mi=myIdx();
-  if(mi<0||!G)return '';
-  if(G.phase!=='play')return '';
-  if(G.order.length&&G.order.includes(mi))return '';
-  const mine=playerTeams(mi);
-  if(mine.length>=3)return '';
-  const available=TEAMS.filter(t=>G.picks[t.id]===undefined);
-  const needed=3-mine.length;
-  let h='<div class="card" style="border-color:var(--gold);margin-bottom:14px"><h2>🎯 Выберите свои сборные</h2>';
-  h+='<div class="hint" style="margin-bottom:10px">Нужно выбрать ещё <b>'+needed+'</b> команд'+(needed===1?'у':'')+' из тех, что остались после драфта — любой тир. Первым занял — первым взял.</div>';
-  if(mine.length){h+='<div class="hint" style="margin-bottom:10px">Уже выбрано: '+mine.map(tid=>flagHtml(T[tid])+' '+esc(T[tid].ru)).join(', ')+'</div>';}
-  if(!available.length){h+='<div class="hint" style="color:var(--red)">Все команды разобраны 😢 Свяжитесь с организатором.</div></div>';return h;}
-  ['A','B','C'].forEach(tier=>{
-    const av=available.filter(t=>t.tier===tier);
-    if(!av.length)return;
-    h+='<div style="margin-bottom:6px"><span class="tierbadge b'+tier+'" style="margin-right:4px">'+tier+'</span><b>'+TIER_NAME[tier]+'</b></div>';
-    h+='<div class="teamgrid" style="margin-bottom:12px">';
-    av.forEach(t=>{h+='<button class="tbtn" onclick="latePick(\''+t.id+'\')">'+
-      '<span class="fl">'+flagHtml(t)+'</span><span>'+esc(t.ru)+'<br><small style="color:var(--mut)">гр. '+t.gr+'</small></span></button>';});
-    h+='</div>';
-  });
-  h+='</div>';
-  return h;
-}
 function render(){
   document.getElementById('tabs').innerHTML=tabsHtml();
   document.getElementById('hdr').innerHTML=hdrHtml();
