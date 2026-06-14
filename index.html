@@ -416,16 +416,43 @@ async function pick(tid){
 }
 async function latePick(tid){
   const mi=myIdx();if(mi<0)return;
-  if(G.picks[tid]!==undefined)return;
-  if(playerTeams(mi).length>=3)return;
-  await mutate(g=>{
+  if(G.phase!=='play')return;
+  if(!T[tid]||G.picks[tid]!==undefined)return;
+  const tier=T[tid].tier;
+  const mineNow=Object.keys(G.picks).filter(function(t){return G.picks[t]===mi;});
+  if(mineNow.length>=3)return;
+  if(mineNow.some(function(t){return T[t]&&T[t].tier===tier;}))return;
+  await mutate(function(g){
     if(g.picks[tid]!==undefined)return;
-    const mine=Object.keys(g.picks).filter(t=>g.picks[t]===mi);
+    const mine=Object.keys(g.picks).filter(function(t){return g.picks[t]===mi;});
     if(mine.length>=3)return;
+    if(mine.some(function(t){return T[t]&&T[t].tier===tier;}))return;
     g.picks[tid]=mi;
     if(!g.pickLog.includes(tid))g.pickLog.push(tid);
   });
   render();
+}
+function latePickHtml(){
+  if(!G||G.phase!=='play')return '';
+  const mi=myIdx();if(mi<0)return '';
+  const mine=Object.keys(G.picks).filter(function(t){return G.picks[t]===mi;});
+  if(mine.length>=3)return '';
+  const have={}; mine.forEach(function(t){ if(T[t])have[T[t].tier]=t; });
+  const TIERS=[['A','--tA'],['B','--tB'],['C','--tC']];
+  let h='<div class="card" style="border:1px solid var(--gold)">';
+  h+='<h2>🎯 Доберите свои сборные</h2>';
+  h+='<div class="hint" style="margin-bottom:6px">Вы присоединились после драфта. Выберите по одной свободной сборной каждого тира.</div>';
+  TIERS.forEach(function(tt){
+    const tier=tt[0], col='var('+tt[1]+')';
+    if(have[tier]){ const tid=have[tier]; h+='<div style="margin:8px 0 2px;font-size:13px"><b style="color:'+col+'">Тир '+tier+'</b> — выбрано: '+flagHtml(T[tid])+' <b>'+esc(T[tid].ru)+'</b> ✓</div>'; return; }
+    const avail=Object.keys(T).filter(function(tid){return T[tid].tier===tier && G.picks[tid]===undefined;}).sort(function(a,b){return T[a].ru.localeCompare(T[b].ru,'ru');});
+    h+='<div style="margin:10px 0 4px"><b style="color:'+col+'">Тир '+tier+'</b> <span style="color:var(--mut);font-size:12px">— выберите одну ('+avail.length+')</span></div>';
+    h+='<div class="chips" style="max-height:200px;overflow:auto">';
+    avail.forEach(function(tid){ h+='<span class="chip" style="cursor:pointer" onclick="latePick(&#39;'+tid+'&#39;)">'+flagHtml(T[tid])+' '+esc(T[tid].ru)+'</span>'; });
+    h+='</div>';
+  });
+  h+='</div>';
+  return h;
 }
 function addLocalPlayer(){
   if(LS.room||!isAdmin())return;
@@ -1028,7 +1055,7 @@ function render(){
   document.getElementById('tabs').innerHTML=tabsHtml();
   document.getElementById('hdr').innerHTML=hdrHtml();
   const v={lobby:viewLobby,draft:viewDraft,play:viewPlay,rules:viewRules}[LS.tab]||viewLobby;
-  document.getElementById('app').innerHTML=myPanelHtml()+v();
+  document.getElementById('app').innerHTML=myPanelHtml()+latePickHtml()+v();
 }
 
 /* ================= СТАРТ ================= */
