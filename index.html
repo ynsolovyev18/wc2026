@@ -545,9 +545,9 @@ function itogiLine(seg,x,rank,pts,sp,tps,used){
   let surprise=null;
   if(tps[seg]){let best=null,bv=-1;for(const tid in tps[seg]){if(G.picks[tid]===i&&tps[seg][tid]>bv){bv=tps[seg][tid];best=tid;}}if(best&&bv>0&&T[best]&&T[best].tier==='C')surprise=flagHtml(T[best])+' '+esc(T[best].ru);}
   let pool,pn,emo;
-  if(rank===0&&v>0&&(pts.length<2||v>pts[1].v)){pool=C_TOP;pn='TOP';emo='🔥';}
-  else if(before===0&&v>0){pool=C_FIRST;pn='FST';emo='🎉';}
+  if(before===0&&v>0){pool=C_FIRST;pn='FST';emo='🎉';}
   else if(surprise&&v>0){pool=C_SURPRISE;pn='SUR';emo='🤯';}
+  else if(rank===0&&v>0&&(pts.length<2||v>pts[1].v)){pool=C_TOP;pn='TOP';emo='🔥';}
   else if(v>0){pool=C_GOOD;pn='GD';emo='👍';}
   else if(before>0){pool=C_ZERO;pn='ZR';emo='😐';}
   else{pool=C_STILLZERO;pn='SZ';emo='🧊';}
