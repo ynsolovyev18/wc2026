@@ -878,11 +878,22 @@ let upcomingMatches=[];
 let upcomingOpen=false;
 function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
 function pendingTeams(){
-  const now=Date.now();
   const s=new Set();
+  if(!G||G.phase!=='play'||!Array.isArray(upcomingMatches))return s;
+  const ORDER=['t1','t2','t3','r32','r16','qf','sf','final'];
+  const today=new Date().toISOString().slice(5,10);
+  const endD={t1:'06-17',t2:'06-23',t3:'06-27'};
+  const exp={r32:16,r16:8,qf:4,sf:2,'final':1};
+  const segCount={};
+  (G.matches||[]).forEach(m=>{ if(!m.a&&!m.b)return; const sg=segOfMatch(m); segCount[sg]=(segCount[sg]||0)+1; });
+  const isFin=(seg)=>endD[seg]?(today>endD[seg]):((segCount[seg]||0)>=(exp[seg]||999));
+  let curTour=null;
+  for(const seg of ORDER){ if(!isFin(seg)){curTour=seg;break;} }
+  if(!curTour)return s;
   upcomingMatches.forEach(m=>{
-    const t=new Date(m.date).getTime();
-    if(!m.live&&t>=now&&t<now+48*3600000){if(m.a)s.add(m.a);if(m.b)s.add(m.b);}
+    if(m.live)return;
+    const sg=segOfMatch({st:m.st,d:(m.date||'').slice(5,10)});
+    if(sg===curTour){ if(m.a)s.add(m.a); if(m.b)s.add(m.b); }
   });
   return s;
 }
