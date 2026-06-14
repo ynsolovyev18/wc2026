@@ -804,13 +804,19 @@ function viewPlay(){
     h+='<div class="pcard'+(lead?' lead':'')+'"><div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
-      '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div><div class="chips">';
-    playerTeams(r.i).forEach(tid=>{
-      const t=T[tid];
-      h+='<span class="chip">'+flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
-         '<span class="p">'+teamPoints(tid)+'</span><span class="st">'+teamStageLabel(tid)+'</span></span>';
+      '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
+    const myTeams=playerTeams(r.i);
+    h+='<div class="chips">';
+    myTeams.forEach(tid=>{
+      const t=T[tid],pts=teamPoints(tid);
+      h+='<span class="chip" style="cursor:pointer" title="Нажмите для деталей" onclick="toggleExpand(\'' +tid+ '\')">'+
+         flagHtml(t)+' '+esc(t.ru)+' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+         '<span class="p">'+pts+'</span><span class="st">'+teamStageLabel(tid)+'</span>'+
+         '<span style="font-size:10px;opacity:.55;margin-left:2px">'+(EXP.has(tid)?'▲':'▼')+'</span></span>';
     });
-    h+='</div></div>';
+    h+='</div>';
+    myTeams.forEach(tid=>{if(EXP.has(tid))h+=teamMatchesHtml(tid);});
+    h+='</div>';
   });
   h+='</div>';
 
