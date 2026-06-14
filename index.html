@@ -264,6 +264,7 @@ async function pull(loud){
     const remote=await cloudGet(LS.room);
     if(!G||(remote.rev||0)>(G.rev||0)){G=Object.assign(defGame(),remote);saveLocal();render();}
     else if(pendingPush||(remote.rev||0)<(G.rev||0)){await cloudPut(LS.room,G);pendingPush=false;saveLocal();}
+    if(G&&G.phase==='play'&&!upcomingMatches.length)fetchUpcoming();
     if(loud){setMsg('Синхронизировано.');render();}
   }catch(e){if(loud){setMsg('Не удалось связаться с комнатой: '+e.message,true);render();}}
 }
@@ -839,7 +840,7 @@ function viewPlay(){
     h+='</details>';
   }
   h+='<details><summary>📋 Завершённые матчи ('+(G.matches||[]).length+')</summary><div class="mlist">'+
-     ((G.matches||[]).length?G.matches.map(m=>'<div><span class="stagepill">'+esc(m.st)+'</span>'+esc(m.d)+' · '+esc(m.n)+' — '+esc(m.s)+'</div>').join(''):'<div>Пока пусто — нажмите «Обновить результаты».</div>')+
+     ((G.matches||[]).length?G.matches.map(m=>{const ta=T[m.a],tb=T[m.b];const na=ta?flagHtml(ta)+' '+esc(ta.ru):esc(m.a||'?');const nb=tb?flagHtml(tb)+' '+esc(tb.ru):esc(m.b||'?');const wmark=(id)=>id===m.w?'<b>':'';const wend=(id)=>id===m.w?'</b>':'';return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="stagepill">'+esc(m.st)+'</span><span style="color:var(--mut);font-size:11px">'+esc(m.d)+'</span>'+wmark(m.a)+na+wend(m.a)+'<span style="color:var(--mut)">'+esc(m.s)+'</span>'+wmark(m.b)+nb+wend(m.b)+'</div>';}).join(''):'<div>Пока пусто — нажмите «Обновить результаты».</div>')+
      '</div></details></div>';
   h+=upcomingHtml();
   return h;
@@ -874,7 +875,10 @@ let upcomingMatches=[];
 async function fetchUpcoming(){
   if(!G||G.phase!=='play')return;
   try{
-    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260801&limit=500';
+    const today=new Date();
+    const from=today.toISOString().slice(0,10).replace(/-/g,'');
+    const toD=new Date(today.getTime()+14*86400000).toISOString().slice(0,10).replace(/-/g,'');
+    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates='+from+'-'+toD+'&limit=200';
     const data=await fetch(url).then(r=>r.json());
     const now=Date.now();
     upcomingMatches=(data.events||[]).filter(ev=>{
