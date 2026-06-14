@@ -641,7 +641,7 @@ function importState(){
 
 /* ================= РЕНДЕР ================= */
 function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function setTab(t){LS.tab=t;saveLocal();render();}
+function setTab(t){LS.tab=t;saveLocal();render();if(t==='play')fetchUpcoming();}
 function tabsHtml(){
   const can={lobby:true,draft:!!G&&G.phase!=='lobby',play:!!G&&G.phase==='play',rules:true};
   return [['lobby','1. Лобби'],['draft','2. Драфт'],['play','3. Турнир'],['rules','Правила']].map(it=>
@@ -835,6 +835,7 @@ function viewPlay(){
   h+='<details><summary>📋 Завершённые матчи ('+(G.matches||[]).length+')</summary><div class="mlist">'+
      ((G.matches||[]).length?G.matches.map(m=>'<div><span class="stagepill">'+esc(m.st)+'</span>'+esc(m.d)+' · '+esc(m.n)+' — '+esc(m.s)+'</div>').join(''):'<div>Пока пусто — нажмите «Обновить результаты».</div>')+
      '</div></details></div>';
+  h+=upcomingHtml();
   return h;
 }
 
@@ -858,6 +859,96 @@ function viewRules(){
    '<b>C:</b> остальные 35 сборных</div>'+
    '<h3>Как устроена комната</h3>'+
    '<div class="hint">Игра хранится в бесплатном JSON-облаке (kvdb.io) — без серверов и аккаунтов, организатору нужен только email. Организатор создаёт комнату и рассылает код или ссылку, участники регистрируются сами. Страница синхронизируется каждые 15 секунд. Резервная копия — «Экспорт состояния» в Лобби. Каждый участник выбирает сборные со своего устройства, когда подходит его очередь.</div></div>';
+}
+
+
+const EXP=new Set();
+function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
+let upcomingMatches=[];
+async function fetchUpcoming(){
+  if(!G||G.phase!=='play')return;
+  try{
+    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260801&limit=500';
+    const data=await fetch(url).then(r=>r.json());
+    const now=Date.now();
+    upcomingMatches=(data.events||[]).filter(ev=>{
+      const comp=(ev.competitions&&ev.competitions[0])||{};
+      if(comp.status&&comp.status.type&&comp.status.type.completed)return false;
+      if(new Date(ev.date).getTime()<now-3600000)return false;
+      const ids=(comp.competitors||[]).map(c=>matchTeam(c.team&&c.team.displayName));
+      return ids.some(id=>id&&G.picks[id]!==undefined);
+    }).slice(0,20).map(ev=>{
+      const comp=(ev.competitions&&ev.competitions[0])||{};
+      const cs=comp.competitors||[];
+      const ids=cs.map(c=>matchTeam(c.team&&c.team.displayName));
+      const live=!!(comp.status&&comp.status.type&&comp.status.type.state==='in');
+      return {date:ev.date,a:ids[0]||null,b:ids[1]||null,st:stageOf(ev),live};
+    });
+    render();
+  }catch(e){}
+}
+
+/* ================= ДЕТАЛИ МАТЧЕЙ КОМАНДЫ ================= */
+function teamMatchesHtml(tid){
+  const t=T[tid],r=G.res[tid]||{};
+  const ms=(G.matches||[]).filter(m=>m.a===tid||m.b===tid);
+  if(!ms.length)return '<div style="font-size:12px;color:var(--mut);padding:4px 12px">Матчи ещё не сыграны</div>';
+  let rows='';
+  if(r.ko){rows+='<div style="font-size:12px;padding:4px 10px;color:var(--ok)">⚡ Выход в плей-офф: +'+P.ko[t.tier]+'</div>';}
+  ms.forEach(m=>{
+    const opp=T[m.a===tid?m.b:m.a];
+    let pts=0;
+    if(m.st==='group'){
+      if(m.w===tid)pts=P.gw[t.tier];
+      else if(!m.w)pts=P.gd[t.tier];
+    }else{
+      if(m.w===tid){const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[m.st];if(key)pts=P[key][t.tier];}
+    }
+    const win=m.w===tid,loss=!!(m.w&&m.w!==tid);
+    rows+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+
+      '<span style="color:var(--mut);width:32px">'+esc(m.d)+'</span>'+
+      '<span style="font-weight:700;width:14px;color:'+(win?'var(--ok)':loss?'var(--red)':'var(--mut)')+'">'+(win?'В':loss?'П':'Н')+'</span>'+
+      (opp?'<span>'+flagHtml(opp)+' '+esc(opp.ru)+'</span>':'<span style="color:var(--mut)">—</span>')+
+      '<span style="color:var(--mut)">'+esc(m.s)+'</span>'+
+      '<span style="margin-left:auto;font-weight:600;color:'+(pts>0?'var(--ok)':'var(--mut)')+'">'+
+      (pts>0?'+'+pts:'—')+'</span></div>';
+  });
+  return '<div style="background:var(--bg);border-radius:8px;margin:6px 2px 4px;overflow:hidden">'+rows+'</div>';
+}
+
+/* ================= ПРЕДСТОЯЩИЕ МАТЧИ ================= */
+function upcomingHtml(){
+  if(!upcomingMatches.length)return '';
+  const isPvp=m=>{
+    const pA=m.a!==null&&G.picks[m.a]!==undefined?G.picks[m.a]:-1;
+    const pB=m.b!==null&&G.picks[m.b]!==undefined?G.picks[m.b]:-1;
+    return pA>=0&&pB>=0&&pA!==pB;
+  };
+  function mRow(m){
+    const pA=m.a!==null&&G.picks[m.a]!==undefined?G.picks[m.a]:-1;
+    const pB=m.b!==null&&G.picks[m.b]!==undefined?G.picks[m.b]:-1;
+    const pvp=pA>=0&&pB>=0&&pA!==pB;
+    const dt=new Date(m.date);
+    const msk=dt.toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    return '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:'+(pvp?'8px 10px':'5px 2px')+
+      ';margin-bottom:'+(pvp?'6px':'0')+
+      ';'+(pvp?'background:rgba(232,196,107,0.1);border:1px solid var(--gold);border-radius:10px':'border-bottom:1px solid var(--line)')+'">'+
+      '<span style="color:var(--mut);font-size:12px;min-width:90px">'+esc(msk)+' МСК</span>'+
+      (m.a&&T[m.a]?flagHtml(T[m.a])+' <b style="font-size:13px">'+esc(T[m.a].ru)+'</b>':'?')+
+      (pA>=0?'<span style="font-size:11px;color:var(--gold)">('+esc((G.players[pA]||{}).name||'')+')</span>':'')+
+      '<span style="color:var(--mut)">vs</span>'+
+      (m.b&&T[m.b]?flagHtml(T[m.b])+' <b style="font-size:13px">'+esc(T[m.b].ru)+'</b>':'?')+
+      (pB>=0?'<span style="font-size:11px;color:var(--gold)">('+esc((G.players[pB]||{}).name||'')+')</span>':'')+
+      (pvp?'<span style="margin-left:auto;font-size:13px">⚔️</span>':'')+
+      '</div>';
+  }
+  const pvpMs=upcomingMatches.filter(isPvp);
+  const rest=upcomingMatches.filter(m=>!isPvp(m));
+  let h='<div class="card"><h2>📅 Предстоящие матчи</h2>';
+  if(pvpMs.length){h+='<div class="hint" style="color:var(--gold);font-weight:600;margin-bottom:8px">⚔️ Дуэли игроков</div>';pvpMs.forEach(m=>{h+=mRow(m);});}
+  if(rest.length){if(pvpMs.length)h+='<div class="hint" style="margin:8px 0 6px">Другие матчи</div>';rest.forEach(m=>{h+=mRow(m);});}
+  h+='<button class="btn sec mini" style="margin-top:10px" onclick="fetchUpcoming()">⟳ Обновить</button></div>';
+  return h;
 }
 
 function latePickHtml(){
