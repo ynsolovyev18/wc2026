@@ -1013,18 +1013,26 @@ function upcomingHtml(){
     const pvp=pA>=0&&pB>=0&&pA!==pB;
     const dt=new Date(m.date);
     const msk=dt.toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-    const border=pvp?'background:rgba(232,196,107,0.1);border:1px solid var(--gold);border-radius:10px':
-                 m.live?'background:rgba(224,122,106,0.08);border:1px solid rgba(224,122,106,0.35);border-radius:8px':
-                 'border-bottom:1px solid var(--line)';
-    const leftCol=m.live
-      ?'<span style="background:var(--red);color:#fff;border-radius:5px;padding:2px 6px;font-size:11px;font-weight:700;white-space:nowrap">● LIVE '+esc(m.score||'')+(m.minute?' '+esc(m.minute)+'\' ':'')+' </span>'
-      :'<span style="color:var(--mut);font-size:12px;min-width:90px;white-space:nowrap">'+esc(msk)+' МСК</span>';
-    return '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:'+(pvp||m.live?'8px 10px':'5px 2px')+';margin-bottom:4px;'+border+'">'+
-      leftCol+tSpan(m.a,pA)+
-      '<span style="color:var(--mut)">vs</span>'+
-      tSpan(m.b,pB)+
-      (pvp?'<span style="margin-left:auto;font-size:13px">⚔️</span>':'')+
-      '</div>';
+    let sa='',sb='';
+    if(m.live&&m.score&&m.score.indexOf(':')>=0){const ps=m.score.split(':');sa=(ps[0]||'').trim();sb=(ps[1]||'').trim();}
+    const min=m.minute?(''+m.minute).replace(/'+$/,''):'';
+    const card=pvp?'background:rgba(232,196,107,0.10);border:1px solid var(--gold);border-radius:10px;padding:8px 11px;margin-bottom:7px':m.live?'background:rgba(224,122,106,0.12);border:1px solid rgba(224,122,106,0.45);border-radius:10px;padding:8px 11px;margin-bottom:7px':'border-bottom:1px solid var(--line);padding:7px 2px';
+    const head=m.live?'<span style="color:var(--red);font-weight:700;font-size:11px;letter-spacing:.3px">● LIVE'+(min?' · '+esc(min)+"'":'')+'</span>':'<span style="color:var(--mut);font-size:11px">'+esc(msk)+' МСК</span>';
+    function tline(tid,pi,sc){
+      const nm='<span style="display:inline-flex;align-items:center;gap:6px;min-width:0">'+((tid&&T[tid])?flagHtml(T[tid])+'<b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(T[tid].ru)+'</b>':'<b style="color:var(--mut)">—</b>')+'</span>';
+      const own=pi>=0?esc((G.players[pi]||{}).name||''):'';
+      let r='<div style="display:flex;align-items:center;padding:3px 0;min-width:0">'+nm;
+      if(sc!==''){ if(own)r+='<span style="font-size:11px;color:var(--gold);font-weight:600;white-space:nowrap;margin-left:6px">'+own+'</span>'; r+='<b style="font-size:17px;margin-left:auto;padding-left:10px">'+esc(sc)+'</b>'; }
+      else if(own){ r+='<span style="font-size:11px;color:var(--gold);font-weight:600;white-space:nowrap;margin-left:auto;padding-left:8px">'+own+'</span>'; }
+      r+='</div>';
+      return r;
+    }
+    let h='<div style="'+card+'">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'+head+(pvp?'<span style="font-size:12px">⚔️</span>':'')+'</div>';
+    h+=tline(m.a,pA,sa);
+    h+=tline(m.b,pB,sb);
+    h+='</div>';
+    return h;
   }
   let h='<div class="card">';
   if(liveMs.length){
