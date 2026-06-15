@@ -834,13 +834,15 @@ function viewPlay(){
     '<span class="hint">'+(G.lastSync?('Матчи обновлены: '+new Date(G.lastSync).toLocaleString('ru-RU')):'Ещё не обновлялось')+'</span></div>'+
     msgHtml()+'</div>';
 
+  const AVATARS={'Vovan':'Vovan.png'};
   const ranks=G.players.map((p,i)=>({i:i,name:p.name,fc:p.fc,sc:playerScore(i)}))
     .sort((a,b)=>b.sc.total-a.sc.total||b.sc.c-a.sc.c);
   const medal=['🥇','🥈','🥉'];
   h+='<div class="lb">';
   ranks.forEach((r,k)=>{
     const lead=k===0&&r.sc.total>0;
-    h+='<div class="pcard'+(lead?' lead':'')+'"><div class="phead">'+
+    const av=AVATARS[r.name];
+    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';padding-right:86px':'')+'">'+(av?'<img src="'+av+'" alt="" loading="lazy" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:72px;height:72px;border-radius:50%;object-fit:cover;object-position:50% 24%;border:2px solid var(--gold)">':'')+'<div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
