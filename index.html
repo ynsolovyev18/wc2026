@@ -844,7 +844,7 @@ function viewPlay(){
     '<span class="hint">'+(G.lastSync?('Матчи обновлены: '+new Date(G.lastSync).toLocaleString('ru-RU')):'Ещё не обновлялось')+'</span></div>'+
     msgHtml()+'</div>';
 
-  const AVATARS={'Vovan':'Vovan.png'};
+  const AVATARS={'Vovan':{f:'Vovan.png',p:'50% 24%'},'Alex':{f:'Alex.png',p:'50% 20%'}};
   const ranks=G.players.map((p,i)=>({i:i,name:p.name,fc:p.fc,sc:playerScore(i)}))
     .sort((a,b)=>b.sc.total-a.sc.total||b.sc.c-a.sc.c);
   const medal=['🥇','🥈','🥉'];
@@ -852,7 +852,7 @@ function viewPlay(){
   ranks.forEach((r,k)=>{
     const lead=k===0&&r.sc.total>0;
     const av=AVATARS[r.name];
-    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';min-height:176px':'')+'">'+(av?'<img src="'+av+'" alt="" loading="lazy" style="position:absolute;right:24px;bottom:15px;width:112px;height:112px;border-radius:50%;object-fit:cover;object-position:50% 24%;border:2px solid var(--gold)">':'')+'<div class="phead">'+
+    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';min-height:176px':'')+'">'+(av?'<img src="'+av.f+'" alt="" loading="lazy" style="position:absolute;right:24px;bottom:15px;width:112px;height:112px;border-radius:50%;object-fit:cover;object-position:'+av.p+';border:2px solid var(--gold)">':'')+'<div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
