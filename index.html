@@ -282,6 +282,16 @@ function myIdx(){if(!G||!LS.myName)return -1;return G.players.findIndex(p=>p.nam
 
 /* ================= ОЧКИ ================= */
 function getRes(tid){if(!G.res[tid])G.res[tid]={gw:0,gd:0,ko:false,w32:false,w16:false,wqf:false,wsf:false,wf:false};return G.res[tid];}
+function lastMatchPts(tid){
+  const t=T[tid];if(!t)return null;
+  const ms=(G.matches||[]).filter(function(m){return m.a===tid||m.b===tid;});
+  if(!ms.length)return null;
+  ms.sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0;});
+  const m=ms[ms.length-1];const tier=t.tier;let p=0;
+  if(m.st==='group'){if(m.w===tid)p=P.gw[tier];else if(!m.w)p=P.gd[tier];else p=0;}
+  else{if(m.st==='r32')p+=(P.ko&&P.ko[tier])||0;const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[m.st];if(m.w===tid&&key)p+=(P[key]&&P[key][tier])||0;}
+  return p;
+}
 function teamPoints(tid){
   const t=T[tid],r=(G&&G.res[tid])||{};
   let p=(r.gw||0)*P.gw[t.tier]+(r.gd||0)*P.gd[t.tier];
@@ -842,7 +852,7 @@ function viewPlay(){
   ranks.forEach((r,k)=>{
     const lead=k===0&&r.sc.total>0;
     const av=AVATARS[r.name];
-    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';padding-right:86px':'')+'">'+(av?'<img src="'+av+'" alt="" loading="lazy" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:72px;height:72px;border-radius:50%;object-fit:cover;object-position:50% 24%;border:2px solid var(--gold)">':'')+'<div class="phead">'+
+    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';min-height:176px':'')+'">'+(av?'<img src="'+av+'" alt="" loading="lazy" style="position:absolute;right:24px;bottom:15px;width:112px;height:112px;border-radius:50%;object-fit:cover;object-position:50% 24%;border:2px solid var(--gold)">':'')+'<div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
@@ -852,11 +862,13 @@ function viewPlay(){
     myTeams.forEach(tid=>{
       const t=T[tid],pts=teamPoints(tid);
       const ip=pending.has(tid);
-      h+='<span class="chip" style="cursor:pointer;'+(ip?'opacity:0.42;filter:grayscale(0.4)':'')+'" title="'+(ip?'Матч ещё не сыгран':'Нажмите для деталей')+'" onclick="toggleExpand(\'' +tid+ '\')">'+
-         flagHtml(t)+' '+esc(t.ru)+(ip?' <span style="font-size:10px">⏳</span>':'')+
-         ' <span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
-         '<span class="p">'+pts+'</span><span class="st">'+teamStageLabel(tid)+'</span>'+
-         '<span style="font-size:10px;opacity:.55;margin-left:2px">'+(EXP.has(tid)?'▲':'▼')+'</span></span>';
+      const lm=lastMatchPts(tid);
+      h+='<span class="chip" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;'+(ip?'opacity:0.42;filter:grayscale(0.4)':'')+'" title="'+(ip?'Матч ещё не сыгран':'Нажмите для деталей')+'" onclick="toggleExpand(&#39;'+tid+'&#39;)">'+
+         '<span style="display:inline-flex;align-items:center;gap:6px;min-width:118px">'+flagHtml(t)+esc(t.ru)+(ip?' <span style="font-size:10px">⏳</span>':'')+'</span>'+
+         '<span class="tierbadge b'+t.tier+'">'+t.tier+'</span>'+
+         '<b class="p" style="min-width:9px;text-align:right">'+pts+'</b>'+
+         (lm!==null?'<span style="color:#5f7a6b;font-size:12px">+'+lm+'</span>':'')+
+         '<span style="font-size:10px;opacity:.55">'+(EXP.has(tid)?'▲':'▼')+'</span></span>';
     });
     h+='</div>';
     myTeams.forEach(tid=>{if(EXP.has(tid))h+=teamMatchesHtml(tid);});
