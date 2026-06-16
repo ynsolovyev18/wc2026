@@ -1038,7 +1038,7 @@ function teamMatchesHtml(tid){
     }
     const win=m.w===tid,loss=!!(m.w&&m.w!==tid);
     rows+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+
-      '<span style="color:var(--mut);width:32px">'+esc(m.d)+'</span>'+
+      '<span style="color:var(--mut);white-space:nowrap;flex-shrink:0">'+esc(m.d)+'</span>'+
       '<span style="font-weight:700;width:14px;color:'+(win?'var(--ok)':loss?'var(--red)':'var(--mut)')+'">'+(win?'В':loss?'П':'Н')+'</span>'+
       (opp?'<span>'+flagHtml(opp)+' '+esc(opp.ru)+'</span>':'<span style="color:var(--mut)">—</span>')+
       '<span style="color:var(--mut)">'+esc(m.s)+'</span>'+
