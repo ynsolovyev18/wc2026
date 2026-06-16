@@ -596,47 +596,89 @@ function phr(arr,seed){let s=0;for(let i=0;i<seed.length;i++)s+=seed.charCodeAt(
 function segOfMatch(m){if(m.st==='group'){if(m.d<='06-17')return 't1';if(m.d<='06-23')return 't2';return 't3';}return m.st;}
 function itogiHtml(){
   if(!G||G.phase!=='play')return '';
-  const SEGDEF=[['t1','Тур 1 · группы'],['t2','Тур 2 · группы'],['t3','Тур 3 · группы'],
-   ['r32','1/16 финала'],['r16','1/8 финала'],['qf','Четвертьфиналы'],['sf','Полуфиналы'],['final','Финал']];
-  const sp={},losses={},tps={};
-  (G.matches||[]).forEach(m=>{
-    if(!m.a&&!m.b)return;
-    const seg=segOfMatch(m);
-    const add=(tid,pts)=>{if(!tid)return;const pi=G.picks[tid];if(pi===undefined)return;
-      sp[seg]=sp[seg]||{};sp[seg][pi]=(sp[seg][pi]||0)+pts;tps[seg]=tps[seg]||{};tps[seg][tid]=(tps[seg][tid]||0)+pts;};
-    if(m.st==='group'){
-      if(m.w)add(m.w,P.gw[T[m.w].tier]);
-      else{add(m.a,P.gd[T[m.a].tier]);add(m.b,P.gd[T[m.b].tier]);}
-    }else{
-      if(seg==='r32'){add(m.a,P.ko[T[m.a].tier]);add(m.b,P.ko[T[m.b].tier]);}
-      const key={r32:'w32',r16:'w16',qf:'wqf',sf:'wsf','final':'wf'}[seg];
-      if(m.w&&key)add(m.w,P[key][T[m.w].tier]);
-      if(m.w){const l=(m.w===m.a?m.b:m.a);
-        if(l&&G.picks[l]!==undefined){losses[seg]=losses[seg]||[];losses[seg].push(l);}}
+  var ST={A:3,B:2,C:1};
+  var MON={'05':'мая','06':'июня','07':'июля','08':'августа'};
+  function nm(t){return T[t].ru;}
+  function own(tid){var pi=G.picks[tid];return pi!==undefined?(G.players[pi]||{}).name:null;}
+  function mp(tid,m){var t=T[tid];if(!t)return 0;var tr=t.tier;if(m.w===tid)return P.gw[tr];if(!m.w)return P.gd[tr];return 0;}
+  function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
+  function gold(o){return '<b style="color:var(--gold)">'+o+'</b>';}
+  function pick(arr,seed,used){var h=0;for(var i=0;i<seed.length;i++)h=(h*31+seed.charCodeAt(i))>>>0;var idx=h%arr.length;if(used){var g=0;while(used.has(arr[idx])&&g<arr.length){idx=(idx+1)%arr.length;g++;}used.add(arr[idx]);}return arr[idx];}
+  function fill(tpl,o,p){var s=tpl.replace('{o}',gold(o));if(p!=null&&p>0)s+=' <span style="color:var(--mut)">(+'+p+')</span>';return s;}
+  var VD=['фейк-фаворит','осечка фаворита','где деньги, фаворит?','фаворит сдулся','фаворит опозорился','докатились','фаворит картонный','зевок фаворита'];
+  var VW=['СЕНСАЦИЯ','фаворита разорвали','андердог унизил фаворита','бомбануло','фаворит поплыл','днище'];
+  var VB=['разнос','избиение','деклассировали','без вариантов','вынесли','покатушки'];
+  var VN=['по делу','без нервов','ожидаемо','чётко'];
+  var IBlow=['всё горит у {o} 🔥','{o}, твои вообще играть умеют?','{o} слил на ровном месте','позорник {o}','{o} рвёт на себе волосы','{o} проклинает драфт','фавориты {o} — фейк','{o}, соболезнуем','{o} в истерике','{o} сдулся со своими','{o} ищет кого винить'];
+  var IBoon=['{o} — король помоек','{o} нафартил на пустом месте','везёт дуракам, {o}','{o} в шоколаде, сам не понял как','{o} украл очки, наглец','лудоманский фарт {o}','{o} ржёт над всеми','{o} не по таланту нахватал'];
+  var IWin=['{o} забрал без понтов','у {o} всё ровно','{o} доволен как удав','рабочий день {o}','{o} не парится'];
+  var IDud=['{o} в пролёте','мимо кассы, {o}','{o} опять ни с чем','{o}, ну ты понял','пусто у {o}'];
+  var IDraw=['{o} забрал очко','{o} не в обиде','ничья — и ладно, {o}','{o} поделил очки'];
+  function line(m,used){
+    if(!(m&&m.a&&m.b)||typeof m.s!=='string'||m.s.indexOf(':')<0)return null;
+    var sa=ST[T[m.a].tier],sb=ST[T[m.b].tier];
+    var fav=sa>=sb?m.a:m.b, und=fav===m.a?m.b:m.a, gap=Math.abs(sa-sb);
+    var oFav=own(fav), oUnd=own(und);
+    if(!oFav&&!oUnd)return null;
+    var sc=m.s.replace(/ /g,''), drew=!m.w, undWon=m.w===und, favWon=m.w===fav;
+    var gd=Math.abs((+sc.split(':')[0])-(+sc.split(':')[1]));
+    var score=nm(m.a)+' '+sc+' '+nm(m.b);
+    var emoji,verdict,s=0,imp=[];
+    if(gap>=1&&(drew||undWon)){
+      s=gap+(undWon?2:0); emoji=undWon?'😱':(gap>=2?'🤯':'🫣');
+      verdict=undWon?pick(VW,sc+nm(fav),used):pick(VD,sc+nm(fav),used);
+      if(oFav)imp.push(cap(fill(pick(IBlow,oFav+sc,used),oFav,mp(fav,m))));
+      if(oUnd)imp.push(cap(fill(pick(IBoon,oUnd+sc,used),oUnd,mp(und,m))));
+    } else if(favWon){
+      var big=gd>=3; s=big?1:0; emoji=big?'🔥':'✅';
+      verdict=big?pick(VB,sc+nm(fav),used):pick(VN,sc+nm(fav),used);
+      if(oFav)imp.push(cap(fill(pick(IWin,oFav,used),oFav,mp(fav,m))));
+      if(oUnd)imp.push(cap(fill(pick(IDud,oUnd,used),oUnd,null)));
+    } else {
+      emoji='⚪'; verdict='ровный расклад'; s=0; var w=m.w;
+      if(w){var l=w===m.a?m.b:m.a; if(own(w))imp.push(cap(fill(pick(IWin,own(w),used),own(w),mp(w,m)))); if(own(l))imp.push(cap(fill(pick(IDud,own(l),used),own(l),null)));}
+      else {if(own(m.a))imp.push(cap(fill(pick(IDraw,own(m.a)+sc,used),own(m.a),mp(m.a,m)))); if(own(m.b))imp.push(cap(fill(pick(IDraw,own(m.b)+sc,used),own(m.b),mp(m.b,m))));}
+    }
+    var t=emoji+' '+score;
+    if(verdict)t+=' — <span style="color:var(--mut)">'+verdict+'.</span>';
+    if(imp.length)t+=' '+imp.join('; ')+'.';
+    return {s:s,txt:t};
+  }
+  function dayPts(ms){
+    var tally={};
+    ms.forEach(function(m){
+      if(!(m&&m.a&&m.b)||typeof m.s!=='string'||m.s.indexOf(':')<0)return;
+      [m.a,m.b].forEach(function(tid){var o=own(tid);if(o)tally[o]=(tally[o]||0)+mp(tid,m);});
+    });
+    var arr=Object.keys(tally).map(function(o){return [o,tally[o]];}).sort(function(a,b){return b[1]-a[1];});
+    return arr.map(function(x){return x[0]+' +'+x[1];}).join(' · ');
+  }
+  function dayLabel(d){var p=String(d).split('-');return parseInt(p[1],10)+' '+(MON[p[0]]||p[0]);}
+  var byDay={};
+  (G.matches||[]).forEach(function(m){if(m&&m.a&&m.b)(byDay[m.d]=byDay[m.d]||[]).push(m);});
+  var daysDesc=Object.keys(byDay).sort().reverse();
+  var shared=new Set(), blocks=[];
+  for(var i2=0;i2<daysDesc.length&&blocks.length<2;i2++){
+    var d=daysDesc[i2];
+    var ls=byDay[d].map(function(m){return line(m,shared);}).filter(Boolean);
+    if(ls.length){
+      ls.sort(function(a,b){return b.s-a.s;});
+      blocks.push({d:d, lines:ls.map(function(x){return x.txt;}), pts:dayPts(byDay[d])});
+    }
+  }
+  if(!blocks.length)return '';
+  var html='';
+  blocks.forEach(function(b,idx){
+    var head='📅 '+dayLabel(b.d);
+    var body='<div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.45">'+b.lines.map(function(t){return '<div>'+t+'</div>';}).join('')+'</div>';
+    var pts=b.pts?'<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;color:var(--mut)">За день: '+b.pts+'</div>':'';
+    if(idx===0){
+      html+='<div class="seg"><div class="seghead">'+head+'</div>'+body+pts+'</div>';
+    } else {
+      html+='<details class="seg"><summary class="seghead" style="cursor:pointer;list-style:none">'+head+' <span style="color:var(--mut);font-weight:400;font-size:12px">— раскрыть</span></summary><div style="margin-top:8px">'+body+pts+'</div></details>';
     }
   });
-  const today=new Date().toISOString().slice(5,10);
-  const exp={r32:16,r16:8,qf:4,sf:2,'final':1};
-  const end={t1:'06-17',t2:'06-23',t3:'06-27'};
-  let cards='';
-  SEGDEF.slice().reverse().forEach(sd=>{
-    const seg=sd[0];
-    if(!sp[seg]&&!losses[seg])return;
-    const segMatches=(G.matches||[]).filter(m=>(m.a||m.b)&&segOfMatch(m)===seg).length;
-    const fin=end[seg]?(today>end[seg]):(segMatches>=exp[seg]);
-    const pts=G.players.map((p,i)=>({name:p.name,i:i,v:(sp[seg]&&sp[seg][i])||0})).sort((a,b)=>b.v-a.v);
-    let body='';
-    const used=new Set();
-    pts.forEach((x,rank)=>{body+=itogiLine(seg,x,rank,pts,sp,tps,used);});
-    if(losses[seg]&&losses[seg].length){
-      body+='<div>⚰️ Потери: '+losses[seg].map(tid=>flagHtml(T[tid])+' '+esc(T[tid].ru)+
-        ' ('+esc((G.players[G.picks[tid]]||{}).name||'')+')').join(', ')+'</div>';
-    }
-    body+='<div class="hint">'+pts.map(x=>esc(x.name)+' +'+x.v).join(' · ')+'</div>';
-    cards+='<div class="seg"><div class="seghead">'+sd[1]+(fin?'':' <span class="tag">ещё идёт</span>')+'</div>'+body+'</div>';
-  });
-  if(!cards)return '';
-  return '<div class="card"><h2>🎭 Итоги туров</h2>'+cards+'</div>';
+  return '<div class="card"><h2>🎭 Итоги дня</h2>'+html+'</div>';
 }
 
 /* ================= МОЙ ПОРТФЕЛЬ ================= */
