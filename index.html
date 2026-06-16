@@ -894,7 +894,7 @@ function viewPlay(){
   ranks.forEach((r,k)=>{
     const lead=k===0&&r.sc.total>0;
     const av=(function(){var n=(r.name||'').normalize('NFC');for(var k in AVATARS){if(k.normalize('NFC')===n)return AVATARS[k];}return null;})();
-    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';min-height:176px':'')+'">'+(av?'<img src="https://wsrv.nl/?url='+encodeURIComponent('ynsolovyev18.github.io/wc2026/'+decodeURIComponent(av.f))+'&w=400&q=82" alt="" loading="lazy" style="position:absolute;right:24px;bottom:15px;width:112px;height:112px;border-radius:50%;object-fit:cover;object-position:'+av.p+';border:2px solid var(--gold)">':'')+'<div class="phead">'+
+    h+='<div class="pcard'+(lead?' lead':'')+'" style="position:relative'+(av?';min-height:176px':'')+'">'+(av?'<div style="position:absolute;right:24px;bottom:15px;width:112px;height:112px;border-radius:50%;background-image:url('+'https://wsrv.nl/?url='+encodeURIComponent('ynsolovyev18.github.io/wc2026/'+decodeURIComponent(av.f))+'&w=400&q=82'+');background-size:cover;background-position:'+av.p+';border:2px solid var(--gold)"></div>':'')+'<div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       (r.fc?'<span class="hint">финал: '+esc(r.fc)+'</span>':'')+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>';
