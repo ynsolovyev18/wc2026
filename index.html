@@ -844,7 +844,7 @@ function viewPlay(){
     '<span class="hint">'+(G.lastSync?('Матчи обновлены: '+new Date(G.lastSync).toLocaleString('ru-RU')):'Ещё не обновлялось')+'</span></div>'+
     msgHtml()+'</div>';
 
-  const AVATARS={'Vovan':{f:'Vovan.png',p:'50% 24%'},'Alex':{f:'Alex.png',p:'50% 20%'},'Рома':{f:'Рома.png',p:'50% 22%'},'Lagranskiy':{f:'Lagranskiy.png',p:'50% 22%'},'Юрий':{f:'%D0%AE%D1%80%D0%B8%D0%B8%CC%86.png',p:'50% 18%'}};
+  const AVATARS={'Vovan':{f:'Vovan2.png',p:'50% 20%'},'Alex':{f:'Alex.png',p:'50% 20%'},'Рома':{f:'Рома.png',p:'50% 22%'},'Lagranskiy':{f:'Lagranskiy.png',p:'50% 22%'},'Юрий':{f:'%D0%AE%D1%80%D0%B8%D0%B8%CC%86.png',p:'50% 18%'}};
   const ranks=G.players.map((p,i)=>({i:i,name:p.name,fc:p.fc,sc:playerScore(i)}))
     .sort((a,b)=>b.sc.total-a.sc.total||b.sc.c-a.sc.c);
   const medal=['🥇','🥈','🥉'];
