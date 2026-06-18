@@ -614,6 +614,8 @@ function itogiHtml(){
   var IWin=['{o} забрал без понтов','у {o} всё ровно','{o} доволен как удав','рабочий день {o}','{o} не парится'];
   var IDud=['{o} в пролёте','мимо кассы, {o}','{o} опять ни с чем','{o}, ну ты понял','пусто у {o}'];
   var IDraw=['{o} забрал очко','{o} не в обиде','ничья — и ладно, {o}','{o} поделил очки'];
+  var VSELF=['внутренние разборки','сам с собой','междусобойчик','семейное дерби','битва за свой же банк'];
+  var ISELF=['обе же {o} — очки никуда не делись','{o} обыграл сам себя','у {o} обе, куда ни кинь — свои','{o} сам себе соперник','{o} забрал у самого себя'];
   function line(m,used){
     if(!(m&&m.a&&m.b)||typeof m.s!=='string'||m.s.indexOf(':')<0)return null;
     var sa=ST[T[m.a].tier],sb=ST[T[m.b].tier];
@@ -624,7 +626,7 @@ function itogiHtml(){
     var gd=Math.abs((+sc.split(':')[0])-(+sc.split(':')[1]));
     var score=nm(m.a)+' '+sc+' '+nm(m.b);
     var emoji,verdict,s=0,imp=[];
-    if(gap>=1&&(drew||undWon)){
+    if(oFav&&oUnd&&oFav===oUnd){var o2=oFav,tot=mp(fav,m)+mp(und,m);emoji='🪞';verdict=pick(VSELF,sc+nm(fav),used);imp.push(cap(fill(pick(ISELF,o2+sc,used),o2,tot)));}else if(gap>=1&&(drew||undWon)){
       s=gap+(undWon?2:0); emoji=undWon?'😱':(gap>=2?'🤯':'🫣');
       verdict=undWon?pick(VW,sc+nm(fav),used):pick(VD,sc+nm(fav),used);
       if(oFav)imp.push(cap(fill(pick(IBlow,oFav+sc,used),oFav,mp(fav,m))));
