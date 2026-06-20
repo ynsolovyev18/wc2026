@@ -737,7 +737,7 @@ function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g
 function setTab(t){LS.tab=t;saveLocal();render();if(t==='play')fetchUpcoming();}
 function tabsHtml(){
   const can={lobby:true,draft:!!G&&G.phase!=='lobby',play:!!G&&G.phase==='play',playoff:!!G&&G.phase==='play',rules:true};
-  return [['lobby','1. Лобби'],['draft','2. Драфт'],['play','3. Турнир'],['playoff','Плей-офф'],['rules','Правила']].map(it=>
+  return [['lobby','1. Лобби'],['draft','2. Драфт'],['play','Турнир'],['playoff','Плей-офф'],['rules','Правила']].filter(it=>!((it[0]==='lobby'||it[0]==='draft')&&G&&G.phase==='play')).map(it=>
     '<button '+(can[it[0]]?'':'disabled ')+(LS.tab===it[0]?'class="on" ':'')+
     'onclick="setTab(\''+it[0]+'\')">'+it[1]+'</button>').join('');
 }
