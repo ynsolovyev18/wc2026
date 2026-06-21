@@ -1054,7 +1054,7 @@ async function fetchUpcoming(){
   if(!G||G.phase!=='play')return;
   try{
     const today=new Date();
-    const from=today.toISOString().slice(0,10).replace(/-/g,'');
+    const from=new Date(today.getTime()-86400000).toISOString().slice(0,10).replace(/-/g,'');
     const toD=new Date(today.getTime()+14*86400000).toISOString().slice(0,10).replace(/-/g,'');
     const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates='+from+'-'+toD+'&limit=200';
     const data=await fetch(url).then(r=>r.json());
