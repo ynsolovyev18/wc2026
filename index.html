@@ -1131,7 +1131,7 @@ function upcomingHtml(){
     let sa='',sb='';
     if(m.live&&m.score&&m.score.indexOf(':')>=0){const ps=m.score.split(':');sa=(ps[0]||'').trim();sb=(ps[1]||'').trim();}
     const min=m.minute?(''+m.minute).replace(/'+$/,''):'';
-    const card=pvp?'background:rgba(232,196,107,0.10);border:1px solid var(--gold);border-radius:10px;padding:8px 11px;margin-bottom:7px':m.live?'background:rgba(224,122,106,0.12);border:1px solid rgba(224,122,106,0.45);border-radius:10px;padding:8px 11px;margin-bottom:7px':'border-bottom:1px solid var(--line);padding:7px 2px';
+    const card=m.live?'background:rgba(224,122,106,0.12);border:1px solid rgba(224,122,106,0.45);border-radius:10px;padding:8px 11px;margin-bottom:7px':pvp?'background:rgba(232,196,107,0.10);border:1px solid var(--gold);border-radius:10px;padding:8px 11px;margin-bottom:7px':'border-bottom:1px solid var(--line);padding:7px 2px';
     const head=m.live?'<span style="color:var(--red);font-weight:700;font-size:11px;letter-spacing:.3px">● LIVE'+(min?' · '+esc(min)+"'":'')+'</span>':'<span style="color:var(--mut);font-size:11px">'+esc(msk)+' МСК</span>';
     function tline(tid,pi,sc){
       const nm='<span style="display:inline-flex;align-items:center;gap:6px;min-width:0">'+((tid&&T[tid])?flagHtml(T[tid])+'<b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(T[tid].ru)+'</b>':'<b style="color:var(--mut)">—</b>')+'</span>';
