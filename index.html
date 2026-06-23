@@ -64,8 +64,10 @@ input[type=text],input[type=number],textarea{background:var(--card2);border:1px 
 .phead .pts{margin-left:auto;flex:none;white-space:nowrap;font-size:22px;font-weight:700;color:var(--gold)}
 .phead .pts small{font-size:12px;color:var(--mut);font-weight:400}
 .psub{color:var(--mut);font-size:13px;line-height:1.4;margin-top:1px}
-.pav{flex-shrink:0;align-self:center;width:112px;height:112px;border-radius:50%;background-size:cover;border:2px solid var(--gold)}
-@media(max-width:640px){.pav{width:88px;height:88px}}
+.pbody{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
+.pcol{flex:1;min-width:0}
+.chips.stack{flex-direction:column;flex-wrap:nowrap;margin-top:0}
+.pav{flex-shrink:0;align-self:flex-start;width:112px;height:112px;border-radius:50%;background-size:cover;border:2px solid var(--gold)}
 .chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
   border-radius:20px;padding:4px 11px;font-size:13px}
@@ -134,6 +136,7 @@ const P = {
 };
 const STAGE_KEYS = ['ko','w32','w16','wqf','wsf','wf'];
 const STAGE_LBL = {ko:'плей-офф', w32:'1/8 финала', w16:'1/4 финала', wqf:'полуфинал', wsf:'финал', wf:'чемпион 🏆'};
+function finalReached(){return (G.matches||[]).some(function(m){return m&&m.st==='final';});}
 const TIER_NAME = {A:'Фавориты', B:'Претенденты', C:'Тёмные лошадки'};
 
 const TEAMS = [
@@ -899,13 +902,14 @@ function viewPlay(){
   ranks.forEach((r,k)=>{
     const lead=k===0&&r.sc.total>0;
     const av=(function(){var n=(r.name||'').normalize('NFC');for(var k in AVATARS){if(k.normalize('NFC')===n)return AVATARS[k];}return null;})();const anyExp=playerTeams(r.i).some(function(t){return EXP.has(t);});
-    h+='<div class="pcard'+(lead?' lead':'')+'" style="display:flex;gap:14px;align-items:center"><div style="flex:1;min-width:0"><div class="phead">'+
+    h+='<div class="pcard'+(lead?' lead':'')+'"><div class="phead">'+
       '<span class="rank">'+(medal[k]||(k+1))+'</span><span class="nm">'+esc(r.name)+(r.name===LS.myName?' <span class="tag">вы</span>':'')+'</span>'+
       '<span class="pts">'+r.sc.total+' <small>очк. · C: '+r.sc.c+'</small></span></div>'+
-      (r.fc?'<div class="psub">финал: '+esc(r.fc)+'</div>':'');
+      ((r.fc&&finalReached())?'<div class="psub">финал: '+esc(r.fc)+'</div>':'')+
+      '<div class="pbody"><div class="pcol">';
     const myTeams=playerTeams(r.i);
     const pending=pendingTeams();
-    h+='<div class="chips">';
+    h+='<div class="chips stack">';
     myTeams.forEach(tid=>{
       const t=T[tid],pts=teamPoints(tid);
       const ip=pending.has(tid);
@@ -918,7 +922,8 @@ function viewPlay(){
          '<span style="font-size:10px;opacity:.55">'+(EXP.has(tid)?'▲':'▼')+'</span></span>';
     });
     h+='</div>';
-    myTeams.forEach(tid=>{if(EXP.has(tid))h+=teamMatchesHtml(tid);});h+='</div>'+(av?'<div class="pav" style="background-image:url('+'https://wsrv.nl/?url='+encodeURIComponent('ynsolovyev18.github.io/wc2026/'+decodeURIComponent(av.f))+'&w=400&q=82'+');background-position:'+av.p+'"></div>':'');
+    myTeams.forEach(tid=>{if(EXP.has(tid))h+=teamMatchesHtml(tid);});
+    h+='</div>'+(av?'<div class="pav" style="background-image:url('+'https://wsrv.nl/?url='+encodeURIComponent('ynsolovyev18.github.io/wc2026/'+decodeURIComponent(av.f))+'&w=400&q=82'+');background-position:'+av.p+'"></div>':'')+'</div>';
     h+='</div>';
   });
   h+='</div>';
