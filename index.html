@@ -319,7 +319,7 @@ function playerScore(pi){
 /* ================= ЛОББИ: СОЗДАНИЕ / РЕГИСТРАЦИЯ ================= */
 function gv(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 async function createGame(cloud){
-  const name=gv('c_name'),fc=gv('c_fc'),fee=parseInt(gv('c_fee'))||5000,email=gv('c_email');
+  const name=gv('c_name'),fc=gv('c_fc'),feeRaw=gv('c_fee'),fee=(feeRaw===''?5000:Math.max(0,parseInt(feeRaw)||0)),email=gv('c_email');
   if(!name){alert('Введите имя');return;}
   if(cloud&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert('Введите корректный email — он нужен облачному хранилищу для создания комнаты');return;}
   const g=defGame();g.admin=name;g.fee=fee;g.players=[{name:name,fc:fc}];g.rev=1;g.updated=Date.now();
@@ -521,7 +521,7 @@ function applyEventsTo(g,evs){
     if(!done)return;
     cnt++;
     let wi=cs.findIndex(c=>c.winner===true);
-    if(wi<0&&st!=='group'){
+    if(wi<0){
       const sc=c=>parseFloat(c.score||0)+(parseFloat(c.shootoutScore||0))/100;
       const a=sc(cs[0]),b=sc(cs[1]);
       if(a!==b)wi=a>b?0:1;
@@ -739,7 +739,7 @@ function importState(){
 }
 
 /* ================= РЕНДЕР ================= */
-function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function setTab(t){LS.tab=t;saveLocal();render();if(t==='play')fetchUpcoming();}
 function tabsHtml(){
   const can={lobby:true,draft:!!G&&G.phase!=='lobby',play:!!G&&G.phase==='play',playoff:!!G&&G.phase==='play',rules:true};
@@ -1198,8 +1198,10 @@ function render(){
   render();
   if(LS.room)pull(true);
   setInterval(function(){
-    if(LS.room&&document.visibilityState==='visible'&&(!G||G.phase!=='play'||LS.tab!=='play'))pull();
-    else if(LS.room&&document.visibilityState==='visible')pull();
+    if(!LS.room||document.visibilityState!=='visible')return;
+    var ae=document.activeElement;
+    if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
+    pull();
   },15000);
 })();
 </script>
