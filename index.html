@@ -1015,44 +1015,45 @@ function viewPlayoff(){
   function bracketData(){
     var sd=standings();
     function slotTeam(slot){if(slot==='3')return null;var grp=sd[slot[1]];if(!grp)return null;return grp.order[+slot[0]-1]||null;}
-    function awin(a,b){if(!a||!b)return null;var mm=(G.matches||[]).filter(function(x){return x.st!=='group'&&x.w&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a));})[0];return mm?mm.w:null;}
+    function amatch(a,b){if(!a||!b)return null;return (G.matches||[]).filter(function(x){return x.st!=='group'&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a));})[0]||null;}
     var R=[[]];
-    for(var L=0;L<16;L++){var m=BRACKET_ORDER[L],nd={a:slotTeam(R32S[m][0]),b:slotTeam(R32S[m][1])};nd.w=awin(nd.a,nd.b);R[0].push(nd);}
-    for(var r=1;r<=4;r++){var prev=R[r-1],cur=[];for(var j=0;j<prev.length/2;j++){var n2={a:prev[2*j].w,b:prev[2*j+1].w};n2.w=awin(n2.a,n2.b);cur.push(n2);}R.push(cur);}
-    return R;
+    for(var L=0;L<16;L++){var m=BRACKET_ORDER[L],nd={a:slotTeam(R32S[m][0]),b:slotTeam(R32S[m][1])};nd.m=amatch(nd.a,nd.b);nd.w=nd.m?nd.m.w:null;R[0].push(nd);}
+    for(var r=1;r<=4;r++){var prev=R[r-1],cur=[];for(var j=0;j<prev.length/2;j++){var n2={a:prev[2*j].w,b:prev[2*j+1].w};n2.m=amatch(n2.a,n2.b);n2.w=n2.m?n2.m.w:null;cur.push(n2);}R.push(cur);}
+    return {R:R,sd:sd};
   }
-  function gFlag(x,y,tid){var t=T[tid];if(!t||!t.iso)return '';return '<image href="https://flagcdn.com/48x36/'+t.iso+'.png" x="'+x+'" y="'+y+'" width="22" height="15" preserveAspectRatio="xMidYMid slice"/>';}
-  function gOwner(cx,cyy,name){var u=medUrl(name);if(!u)return '';var id='gb'+(++cid);return '<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="8"/></clipPath><image href="'+u+'" x="'+(cx-8)+'" y="'+(cyy-8)+'" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="8" fill="none" stroke="#e8c46b" stroke-width="1"/>';}
-  function gRow(x,ty,w,tid,win,fs){if(!tid)return '<text x="'+(x+9)+'" y="'+(ty+4)+'" fill="#557066" font-size="'+(fs-1)+'">—</text>';var t=T[tid],o=own(tid);var s=gFlag(x+7,ty-7,tid);s+='<text x="'+(x+33)+'" y="'+(ty+4)+'" fill="'+(win?'#e8c46b':'#e9f2ec')+'" font-size="'+fs+'"'+(win?' font-weight="600"':'')+'>'+esc(t.ru)+'</text>';if(o)s+=gOwner(x+w-14,ty,o);return s;}
-  function gBox(x,yc,w,h,nd,fs){var aw=!!(nd.w&&nd.w===nd.a),bwn=!!(nd.w&&nd.w===nd.b);var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#122b1d" stroke="'+(nd.w?'#2c5a40':'#1f4530')+'"/>';s+=gRow(x,yc-h/4,w,nd.a,aw,fs);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,bwn,fs);return s;}
+  function grpDone(tid,sd){var t=T[tid];if(!t)return false;var g=sd[t.gr];return !!(g&&g.complete);}
+  function gFlag(x,y,tid,dim){var t=T[tid];if(!t||!t.iso)return '';var im='<image href="https://flagcdn.com/48x36/'+t.iso+'.png" x="'+x+'" y="'+y+'" width="22" height="15" preserveAspectRatio="xMidYMid slice"/>';return dim?'<g opacity="0.45">'+im+'</g>':im;}
+  function gOwner(cx,cyy,name,dim){var u=medUrl(name);if(!u)return '';var id='gb'+(++cid);var g='<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="8"/></clipPath><image href="'+u+'" x="'+(cx-8)+'" y="'+(cyy-8)+'" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="8" fill="none" stroke="#e8c46b" stroke-width="1"/>';return dim?'<g opacity="0.45">'+g+'</g>':g;}
+  function gRow(x,ty,w,tid,win,dim,fs,sc,empty){if(!tid)return '<text x="'+(x+9)+'" y="'+(ty+4)+'" fill="#4d6358" font-size="'+(fs-1.5)+'">'+(empty||'—')+'</text>';var t=T[tid],o=own(tid),col=win?'#e8c46b':(dim?'#5f7a6b':'#e9f2ec');var s=gFlag(x+7,ty-7,tid,dim);s+='<text x="'+(x+33)+'" y="'+(ty+4)+'" fill="'+col+'" font-size="'+fs+'"'+(win?' font-weight="600"':'')+'>'+esc(t.ru)+'</text>';var hs=(sc!==''&&sc!=null);if(hs)s+='<text x="'+(x+w-7)+'" y="'+(ty+4)+'" text-anchor="end" font-size="'+fs+'" fill="'+(win?'#e8c46b':(dim?'#5f7a6b':'#cfe0d6'))+'"'+(win?' font-weight="600"':'')+'>'+sc+'</text>';if(o)s+=gOwner(x+w-(hs?27:13),ty,o,dim);return s;}
+  function gBox(x,yc,w,h,nd,fs,round,sd){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):(round===0?!grpDone(tid,sd):false),sc:nd.m?pscore(nd.m,tid):''};}var sa=stt(nd.a),sb=stt(nd.b),emp=round===0?'3-е?':'—';var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#122b1d" stroke="'+(played?'#2c5a40':'#1f4530')+'"/>';s+=gRow(x,yc-h/4,w,nd.a,sa?sa.win:false,sa?sa.dim:false,fs,sa?sa.sc:'',emp);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,sb?sb.win:false,sb?sb.dim:false,fs,sb?sb.sc:'',emp);return s;}
   function gConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="1"/>';}
-  function bScreen1(R){
+  function bScreen1(R,sd){
     var COLX=[3,199],BW=182,BH=36,fs=12.5,s='';
     function c0(L){return 42*L+40;}function c1(j){return 84*j+61;}
     for(var j=0;j<8;j++){s+=gConn(COLX[0]+BW,COLX[1],c0(2*j),c0(2*j+1),c1(j));}
     s+='<text x="'+(COLX[0]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/16</text><text x="'+(COLX[1]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/8</text>';
-    for(var L=0;L<16;L++){s+=gBox(COLX[0],c0(L),BW,BH,R[0][L],fs);}
-    for(var j2=0;j2<8;j2++){s+=gBox(COLX[1],c1(j2),BW,BH,R[1][j2],fs);}
+    for(var L=0;L<16;L++){s+=gBox(COLX[0],c0(L),BW,BH,R[0][L],fs,0,sd);}
+    for(var j2=0;j2<8;j2++){s+=gBox(COLX[1],c1(j2),BW,BH,R[1][j2],fs,1,sd);}
     return '<svg viewBox="0 0 384 696" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
-  function bScreen2(R){
+  function bScreen2(R,sd){
     var COLX=[3,133,263],BW=118,BH=46,fs=12,s='';
     function cq(k){return 130*k+58;}function cs(sm){return 260*sm+123;}function cf(){return 253;}
     for(var sm=0;sm<2;sm++){s+=gConn(COLX[0]+BW,COLX[1],cq(2*sm),cq(2*sm+1),cs(sm));}
     s+=gConn(COLX[1]+BW,COLX[2],cs(0),cs(1),cf());
     s+='<text x="'+(COLX[0]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/4</text><text x="'+(COLX[1]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/2</text><text x="'+(COLX[2]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">Финал</text>';
-    for(var k=0;k<4;k++){s+=gBox(COLX[0],cq(k),BW,BH,R[2][k],fs);}
-    for(var sm2=0;sm2<2;sm2++){s+=gBox(COLX[1],cs(sm2),BW,BH,R[3][sm2],fs);}
-    s+=gBox(COLX[2],cf(),BW,BH,R[4][0],fs);
+    for(var k=0;k<4;k++){s+=gBox(COLX[0],cq(k),BW,BH,R[2][k],fs,2,sd);}
+    for(var sm2=0;sm2<2;sm2++){s+=gBox(COLX[1],cs(sm2),BW,BH,R[3][sm2],fs,3,sd);}
+    s+=gBox(COLX[2],cf(),BW,BH,R[4][0],fs,4,sd);
     return '<svg viewBox="0 0 384 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
   function bracketTwoScreen(){
-    var R=bracketData(),champ=R[4][0].w,t0=(bvw===0);
+    var D=bracketData(),R=D.R,sd=D.sd,champ=R[4][0].w,t0=(bvw===0);
     function pill(on){return 'flex:1;font-size:12px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400');}
     var toggle='<div style="display:flex;gap:6px;margin-bottom:10px"><button style="'+pill(t0)+'" onclick="setBvw(0)">1/16 · 1/8</button><button style="'+pill(!t0)+'" onclick="setBvw(1)">1/4 · 1/2 · Финал</button></div>';
-    var body=t0?bScreen1(R):bScreen2(R);
+    var body=t0?bScreen1(R,sd):bScreen2(R,sd);
     var banner=(!t0&&champ)?'<div style="text-align:center;margin-top:8px;font-size:14px;color:var(--gold);font-weight:600">🏆 '+esc(T[champ]?T[champ].ru:code(champ))+(own(champ)?' · '+esc(own(champ)):'')+'</div>':'';
-    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">1/16 спроецирован по местам в группах; победители заполняются по ходу плей-офф. Кружок — чья команда.</div>';
+    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Бледные — место в сетке ещё не подтверждено; яркие — подтверждено. По ходу плей-офф появляется счёт, победитель — золотом, проигравший гаснет. Кружок — чья команда.</div>';
     return hint+toggle+body+banner;
   }
   function fullBracketSvg(){
