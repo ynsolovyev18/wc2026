@@ -1012,6 +1012,49 @@ function viewPlayoff(){
   function r32chip(name){var u=medUrl(name);if(!u)return '';var a=avof(name);return '<img src="'+u+'" style="width:16px;height:16px;border-radius:50%;object-fit:cover;object-position:'+a.p+';border:1px solid var(--gold);vertical-align:middle">';}
   function r32side(slot,sd){if(slot==='3')return '<div style="display:flex;align-items:center;gap:7px;font-size:13px;opacity:.32"><span style="color:#8fae9c;font-size:10px;width:26px">3-е</span><span style="color:#8fae9c">место</span></div>';var pos=+slot[0],g=slot[1],grp=sd[g];if(!grp)return '<div style="opacity:.3">—</div>';var tid=grp.order[pos-1];if(!tid)return '<div style="opacity:.3">—</div>';var t=T[tid],o=own(tid),op=grp.complete?'1':'.4';return '<div style="display:flex;align-items:center;gap:7px;font-size:13px;opacity:'+op+'"><span style="color:#8fae9c;font-size:10px;width:26px">'+slot+'</span><span style="font-weight:500">'+code(tid)+'</span>'+(o?r32chip(o):'')+'<span style="color:#8fae9c;font-size:12px">'+esc(t.ru)+'</span></div>';}
   function projR32Html(){var sd=standings();var rows=R32S.map(function(p){return '<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px">'+r32side(p[0],sd)+'<div style="height:1px;background:var(--line);margin:5px 0"></div>'+r32side(p[1],sd)+'</div>';}).join('');return '<div style="font-size:11px;color:#8fae9c;margin-bottom:12px">Сетка R32 · прогноз по позициям в группах. Бледные — ещё не зафиксированы; пары с 3-ми местами определятся 27 июня.</div>'+rows;}
+  function bracketData(){
+    var sd=standings();
+    function slotTeam(slot){if(slot==='3')return null;var grp=sd[slot[1]];if(!grp)return null;return grp.order[+slot[0]-1]||null;}
+    function awin(a,b){if(!a||!b)return null;var mm=(G.matches||[]).filter(function(x){return x.st!=='group'&&x.w&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a));})[0];return mm?mm.w:null;}
+    var R=[[]];
+    for(var L=0;L<16;L++){var m=BRACKET_ORDER[L],nd={a:slotTeam(R32S[m][0]),b:slotTeam(R32S[m][1])};nd.w=awin(nd.a,nd.b);R[0].push(nd);}
+    for(var r=1;r<=4;r++){var prev=R[r-1],cur=[];for(var j=0;j<prev.length/2;j++){var n2={a:prev[2*j].w,b:prev[2*j+1].w};n2.w=awin(n2.a,n2.b);cur.push(n2);}R.push(cur);}
+    return R;
+  }
+  function gFlag(x,y,tid){var t=T[tid];if(!t||!t.iso)return '';return '<image href="https://flagcdn.com/48x36/'+t.iso+'.png" x="'+x+'" y="'+y+'" width="22" height="15" preserveAspectRatio="xMidYMid slice"/>';}
+  function gOwner(cx,cyy,name){var u=medUrl(name);if(!u)return '';var id='gb'+(++cid);return '<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="8"/></clipPath><image href="'+u+'" x="'+(cx-8)+'" y="'+(cyy-8)+'" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="8" fill="none" stroke="#e8c46b" stroke-width="1"/>';}
+  function gRow(x,ty,w,tid,win,fs){if(!tid)return '<text x="'+(x+9)+'" y="'+(ty+4)+'" fill="#557066" font-size="'+(fs-1)+'">—</text>';var t=T[tid],o=own(tid);var s=gFlag(x+7,ty-7,tid);s+='<text x="'+(x+33)+'" y="'+(ty+4)+'" fill="'+(win?'#e8c46b':'#e9f2ec')+'" font-size="'+fs+'"'+(win?' font-weight="600"':'')+'>'+esc(t.ru)+'</text>';if(o)s+=gOwner(x+w-14,ty,o);return s;}
+  function gBox(x,yc,w,h,nd,fs){var aw=!!(nd.w&&nd.w===nd.a),bwn=!!(nd.w&&nd.w===nd.b);var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#122b1d" stroke="'+(nd.w?'#2c5a40':'#1f4530')+'"/>';s+=gRow(x,yc-h/4,w,nd.a,aw,fs);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,bwn,fs);return s;}
+  function gConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="1"/>';}
+  function bScreen1(R){
+    var COLX=[3,199],BW=182,BH=36,fs=12.5,s='';
+    function c0(L){return 42*L+40;}function c1(j){return 84*j+61;}
+    for(var j=0;j<8;j++){s+=gConn(COLX[0]+BW,COLX[1],c0(2*j),c0(2*j+1),c1(j));}
+    s+='<text x="'+(COLX[0]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/16</text><text x="'+(COLX[1]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/8</text>';
+    for(var L=0;L<16;L++){s+=gBox(COLX[0],c0(L),BW,BH,R[0][L],fs);}
+    for(var j2=0;j2<8;j2++){s+=gBox(COLX[1],c1(j2),BW,BH,R[1][j2],fs);}
+    return '<svg viewBox="0 0 384 696" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
+  }
+  function bScreen2(R){
+    var COLX=[3,133,263],BW=118,BH=46,fs=12,s='';
+    function cq(k){return 130*k+58;}function cs(sm){return 260*sm+123;}function cf(){return 253;}
+    for(var sm=0;sm<2;sm++){s+=gConn(COLX[0]+BW,COLX[1],cq(2*sm),cq(2*sm+1),cs(sm));}
+    s+=gConn(COLX[1]+BW,COLX[2],cs(0),cs(1),cf());
+    s+='<text x="'+(COLX[0]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/4</text><text x="'+(COLX[1]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/2</text><text x="'+(COLX[2]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">Финал</text>';
+    for(var k=0;k<4;k++){s+=gBox(COLX[0],cq(k),BW,BH,R[2][k],fs);}
+    for(var sm2=0;sm2<2;sm2++){s+=gBox(COLX[1],cs(sm2),BW,BH,R[3][sm2],fs);}
+    s+=gBox(COLX[2],cf(),BW,BH,R[4][0],fs);
+    return '<svg viewBox="0 0 384 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
+  }
+  function bracketTwoScreen(){
+    var R=bracketData(),champ=R[4][0].w,t0=(bvw===0);
+    function pill(on){return 'flex:1;font-size:12px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400');}
+    var toggle='<div style="display:flex;gap:6px;margin-bottom:10px"><button style="'+pill(t0)+'" onclick="setBvw(0)">1/16 · 1/8</button><button style="'+pill(!t0)+'" onclick="setBvw(1)">1/4 · 1/2 · Финал</button></div>';
+    var body=t0?bScreen1(R):bScreen2(R);
+    var banner=(!t0&&champ)?'<div style="text-align:center;margin-top:8px;font-size:14px;color:var(--gold);font-weight:600">🏆 '+esc(T[champ]?T[champ].ru:code(champ))+(own(champ)?' · '+esc(own(champ)):'')+'</div>':'';
+    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">1/16 спроецирован по местам в группах; победители заполняются по ходу плей-офф. Кружок — чья команда.</div>';
+    return hint+toggle+body+banner;
+  }
   function fullBracketSvg(){
     var sd=standings();
     function slotTeam(slot){if(slot==='3')return null;var grp=sd[slot[1]];if(!grp)return null;return grp.order[+slot[0]-1]||null;}
@@ -1040,7 +1083,7 @@ function viewPlayoff(){
     return tabs+svg;
   }
   function pathsHtml(){var legend='<div style="display:flex;gap:11px;font-size:10px;color:#8fae9c;margin-bottom:12px"><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#7ec8a0"></b> прошёл</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e8c46b"></b> сейчас</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e69a8c"></b> вылет</span></div>';return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="color:var(--gold);font-size:15px;font-weight:500">🧭 Пути игроков</span><span style="flex:1;height:1px;background:var(--line)"></span></div>'+legend+'<div style="font-size:11px;color:#8fae9c;margin-bottom:10px;line-height:1.5">У имени: <b>текущие очки</b> → <b style="color:var(--gold)">потенциальный максимум</b> — если все сборные дойдут до предела; при встрече своих команд проходит та, что из слабейшей корзины.</div>'+G.players.map(function(p,i){return pcard(i);}).join('');}
-  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+fullBracketSvg()+'</div>'+pathsHtml()+'</div>';
+  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+bracketTwoScreen()+'</div>'+pathsHtml()+'</div>';
 }
 
 function viewRules(){
@@ -1071,6 +1114,7 @@ function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
 let upcomingMatches=[];
 let upcomingOpen=false;
 function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
+let bvw=0;function setBvw(v){bvw=v;render();}
 function pendingTeams(){
   const s=new Set();
   if(!G||G.phase!=='play'||!Array.isArray(upcomingMatches))return s;
