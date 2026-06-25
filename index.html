@@ -1012,6 +1012,24 @@ function viewPlayoff(){
   function r32chip(name){var u=medUrl(name);if(!u)return '';var a=avof(name);return '<img src="'+u+'" style="width:16px;height:16px;border-radius:50%;object-fit:cover;object-position:'+a.p+';border:1px solid var(--gold);vertical-align:middle">';}
   function r32side(slot,sd){if(slot==='3')return '<div style="display:flex;align-items:center;gap:7px;font-size:13px;opacity:.32"><span style="color:#8fae9c;font-size:10px;width:26px">3-е</span><span style="color:#8fae9c">место</span></div>';var pos=+slot[0],g=slot[1],grp=sd[g];if(!grp)return '<div style="opacity:.3">—</div>';var tid=grp.order[pos-1];if(!tid)return '<div style="opacity:.3">—</div>';var t=T[tid],o=own(tid),op=grp.complete?'1':'.4';return '<div style="display:flex;align-items:center;gap:7px;font-size:13px;opacity:'+op+'"><span style="color:#8fae9c;font-size:10px;width:26px">'+slot+'</span><span style="font-weight:500">'+code(tid)+'</span>'+(o?r32chip(o):'')+'<span style="color:#8fae9c;font-size:12px">'+esc(t.ru)+'</span></div>';}
   function projR32Html(){var sd=standings();var rows=R32S.map(function(p){return '<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px">'+r32side(p[0],sd)+'<div style="height:1px;background:var(--line);margin:5px 0"></div>'+r32side(p[1],sd)+'</div>';}).join('');return '<div style="font-size:11px;color:#8fae9c;margin-bottom:12px">Сетка R32 · прогноз по позициям в группах. Бледные — ещё не зафиксированы; пары с 3-ми местами определятся 27 июня.</div>'+rows;}
+  function fullBracketSvg(){
+    var sd=standings();
+    function slotTeam(slot){if(slot==='3')return null;var grp=sd[slot[1]];if(!grp)return null;return grp.order[+slot[0]-1]||null;}
+    function awin(a,b){if(!a||!b)return null;var mm=(G.matches||[]).filter(function(x){return x.st!=='group'&&x.w&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a));})[0];return mm?mm.w:null;}
+    function bcy(r,i){if(r===0)return 30*i+27;if(r===1)return 60*i+42;if(r===2)return 120*i+72;if(r===3)return 240*i+132;return 252;}
+    function bMini(cx,cyy,name){var u=medUrl(name);if(!u)return '';var id='kb'+(++cid);return '<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="6"/></clipPath><image href="'+u+'" x="'+(cx-6)+'" y="'+(cyy-6)+'" width="12" height="12" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="6" fill="none" stroke="#e8c46b" stroke-width="0.8"/>';}
+    function bTeam(x,ty,bw,tid,dim,win){if(!tid)return '<text x="'+(x+5)+'" y="'+(ty+3)+'" fill="#557066" font-size="8.5">—</text>';var o=own(tid);var col=win?'#e8c46b':(dim?'#6f8a7d':'#e9f2ec');var t='<text x="'+(x+5)+'" y="'+(ty+3)+'" fill="'+col+'" font-size="9"'+(win?' font-weight="600"':'')+(dim?' opacity="0.6"':'')+'>'+code(tid)+'</text>';if(o)t+=bMini(x+bw-9,ty,o);return t;}
+    function bBox(x,r,i,nd){var bw=64,yc=bcy(r,i),aw=!!(nd.w&&nd.w===nd.a),bw2=!!(nd.w&&nd.w===nd.b),ad=!!(nd.w&&nd.w!==nd.a),bd=!!(nd.w&&nd.w!==nd.b);var t='<rect x="'+x+'" y="'+(yc-11)+'" width="'+bw+'" height="22" rx="4" fill="#122b1d" stroke="'+((nd.w&&r===4)?'#e8c46b':'#1f4530')+'"/>';t+=bTeam(x,yc-5,bw,nd.a,ad,aw);t+='<line x1="'+(x+3)+'" y1="'+yc+'" x2="'+(x+bw-3)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';t+=bTeam(x,yc+6,bw,nd.b,bd,bw2);return t;}
+    var rounds=[[]];
+    for(var L=0;L<16;L++){var m=BRACKET_ORDER[L],nd={a:slotTeam(R32S[m][0]),b:slotTeam(R32S[m][1])};nd.w=awin(nd.a,nd.b);rounds[0].push(nd);}
+    for(var r=1;r<=4;r++){var prev=rounds[r-1],cur=[];for(var j=0;j<prev.length/2;j++){var n2={a:prev[2*j].w,b:prev[2*j+1].w};n2.w=awin(n2.a,n2.b);cur.push(n2);}rounds.push(cur);}
+    var COLX=[2,80,158,236,314],BW=64,H=494,s='';
+    for(var ra=1;ra<=4;ra++){for(var ia=0;ia<rounds[ra].length;ia++){var crx=COLX[ra-1]+BW,plx=COLX[ra],mid=crx+(plx-crx)/2,c0=bcy(ra-1,2*ia),c1=bcy(ra-1,2*ia+1),cp=bcy(ra,ia);s+='<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="0.8"/>';}}
+    ['1/16','1/8','1/4','1/2','Финал'].forEach(function(l,r){s+='<text x="'+(COLX[r]+BW/2)+'" y="10" text-anchor="middle" fill="#8fae9c" font-size="8.5">'+l+'</text>';});
+    for(var rb=0;rb<=4;rb++){for(var ib=0;ib<rounds[rb].length;ib++){s+=bBox(COLX[rb],rb,ib,rounds[rb][ib]);}}
+    var champ=rounds[4][0].w,banner=champ?'<div style="text-align:center;margin-top:8px;font-size:14px;color:var(--gold);font-weight:600">🏆 '+esc(T[champ]?T[champ].ru:code(champ))+(own(champ)?' · '+esc(own(champ)):'')+'</div>':'';
+    return '<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Сетка плей-офф · 1/16 спроецирован по местам в группах, победители заполняются по ходу. Кружок — чья команда.</div><svg viewBox="0 0 388 '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>'+banner;
+  }
   function treeHtml(){
     var qfs=koM('qf'),sfs=koM('sf'),fin=koM('final')[0]||null,early=koM('r32').length+koM('r16').length;
     if(!qfs.length&&!sfs.length&&!fin&&!early){return projR32Html();}
@@ -1022,7 +1040,7 @@ function viewPlayoff(){
     return tabs+svg;
   }
   function pathsHtml(){var legend='<div style="display:flex;gap:11px;font-size:10px;color:#8fae9c;margin-bottom:12px"><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#7ec8a0"></b> прошёл</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e8c46b"></b> сейчас</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e69a8c"></b> вылет</span></div>';return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="color:var(--gold);font-size:15px;font-weight:500">🧭 Пути игроков</span><span style="flex:1;height:1px;background:var(--line)"></span></div>'+legend+'<div style="font-size:11px;color:#8fae9c;margin-bottom:10px;line-height:1.5">У имени: <b>текущие очки</b> → <b style="color:var(--gold)">потенциальный максимум</b> — если все сборные дойдут до предела; при встрече своих команд проходит та, что из слабейшей корзины.</div>'+G.players.map(function(p,i){return pcard(i);}).join('');}
-  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+treeHtml()+'</div>'+pathsHtml()+'</div>';
+  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+fullBracketSvg()+'</div>'+pathsHtml()+'</div>';
 }
 
 function viewRules(){
