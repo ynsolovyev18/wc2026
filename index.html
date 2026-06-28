@@ -216,7 +216,7 @@ let G=null;
 let msg='',msgErr=false,pendingPush=false;
 
 function defGame(){return {v:2,rev:0,updated:0,admin:'',fee:5000,regOpen:true,lateOpen:false,phase:'lobby',
-  players:[],order:[],picks:{},pickLog:[],res:{},matches:[],lastSync:null};}
+  players:[],order:[],picks:{},pickLog:[],res:{},matches:[],koFix:[],lastSync:null};}
 function loadLocal(){
   try{const raw=localStorage.getItem(KEY);
     if(raw){const o=JSON.parse(raw);LS.room=o.room||'';LS.myName=o.myName||'';LS.tab=o.tab||'lobby';
@@ -507,7 +507,7 @@ function stageOf(ev){
   return 'final';
 }
 function applyEventsTo(g,evs){
-  const res={},matches=[];
+  const res={},matches=[],koFix=[];
   const gt=tid=>res[tid]||(res[tid]={gw:0,gd:0,ko:false,w32:false,w16:false,wqf:false,wsf:false,wf:false});
   let cnt=0;
   evs.forEach(ev=>{
@@ -515,7 +515,8 @@ function applyEventsTo(g,evs){
     const comp=(ev.competitions&&ev.competitions[0])||{};
     const cs=comp.competitors||[];if(cs.length<2)return;
     const ids=cs.map(c=>matchTeam(c.team&&c.team.displayName));
-    if(st!=='group')ids.forEach(id=>{if(id)gt(id).ko=true;});
+    let kf=null;
+    if(st!=='group'){ids.forEach(id=>{if(id)gt(id).ko=true;});if(ids[0]&&ids[1]){kf={st:st,a:ids[0],b:ids[1],w:null};koFix.push(kf);}}
     const done=!!(comp.status&&comp.status.type&&comp.status.type.completed)||
                !!(ev.status&&ev.status.type&&ev.status.type.completed);
     if(!done)return;
@@ -526,6 +527,7 @@ function applyEventsTo(g,evs){
       const a=sc(cs[0]),b=sc(cs[1]);
       if(a!==b)wi=a>b?0:1;
     }
+    if(kf&&wi>=0&&ids[wi])kf.w=ids[wi];
     matches.push({d:(ev.date||'').slice(5,10),n:ev.name||'',s:cs.map(c=>c.score||'').join(' : '),st:st,
       a:ids[0]||null,b:ids[1]||null,w:(wi>=0?(ids[wi]||null):null)});
     if(st==='group'){
@@ -536,7 +538,7 @@ function applyEventsTo(g,evs){
       if(wi>=0&&ids[wi]&&key)gt(ids[wi])[key]=true;
     }
   });
-  g.res=res;g.matches=matches.reverse();
+  g.res=res;g.matches=matches.reverse();g.koFix=koFix;
   return cnt;
 }
 async function syncResults(){
@@ -1014,7 +1016,7 @@ function viewPlayoff(){
     var sd=standings();
     function slotTeam(slot){if(slot==='3')return null;var grp=sd[slot[1]];if(!grp)return null;return grp.order[+slot[0]-1]||null;}
     function amatch(a,b){if(!a||!b)return null;return (G.matches||[]).filter(function(x){return x.st!=='group'&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a));})[0]||null;}
-    var realR32=(upcomingMatches||[]).filter(function(f){return f.st==='r32'&&f.a&&f.b;}).concat((G.matches||[]).filter(function(f){return f.st==='r32'&&f.a&&f.b;}));
+    var realR32=(G.koFix||[]).filter(function(f){return f.st==='r32'&&f.a&&f.b;}).concat((upcomingMatches||[]).filter(function(f){return f.st==='r32'&&f.a&&f.b;})).concat((G.matches||[]).filter(function(f){return f.st==='r32'&&f.a&&f.b;}));
     function findFx(tid){if(!tid)return null;return realR32.filter(function(f){return f.a===tid||f.b===tid;})[0]||null;}
     function fxBetween(a,b){if(!a||!b)return null;return realR32.filter(function(f){return (f.a===a&&f.b===b)||(f.a===b&&f.b===a);})[0]||null;}
     var R=[[]];
