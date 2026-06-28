@@ -963,6 +963,7 @@ function viewPlayoff(){
   function own(tid){var pi=G.picks[tid];return pi!==undefined?(G.players[pi]||{}).name:null;}
   function koM(st){return (G.matches||[]).filter(function(m){return m.st===st&&m.a&&m.b;});}
   var koStarted=KO.some(function(st){return koM(st).length>0;});
+  var allGroupsDone=(function(){var sd=standings();return ['A','B','C','D','E','F','G','H','I','J','K','L'].every(function(g){return sd[g]&&sd[g].complete;});})();
   var _sd=null;
   function clinched(tid){if(!_sd)_sd=standings();var t=T[tid];if(!t)return false;var grp=_sd[t.gr];if(!grp||!grp.complete)return false;var p=grp.order.indexOf(tid);return p===0||p===1;}
   function track(tid){
@@ -972,7 +973,7 @@ function viewPlayoff(){
     var lastWith=-1;ALL.forEach(function(st,i){if(st!=='group'&&byst[st])lastWith=i;});
     var cols=[],alive=true,cur=-1;
     for(var i=0;i<ALL.length;i++){var st=ALL[i];
-      if(st==='group'){if(thru)cols.push('g');else if(koStarted){cols.push('r');alive=false;}else{cols.push('y');cur=0;}continue;}
+      if(st==='group'){if(thru)cols.push('g');else if(koStarted||allGroupsDone){cols.push('r');alive=false;}else{cols.push('y');cur=0;}continue;}
       if(!alive){cols.push('o');continue;}
       var m=byst[st];
       if(m){if(!m.w){cols.push('y');if(cur<0)cur=i;}else if(m.w===tid){cols.push('g');}else{cols.push('r');alive=false;}}
@@ -985,9 +986,9 @@ function viewPlayoff(){
     else if(cur>0){var mm=byst[ALL[cur]];var opp=mm?(mm.a===tid?mm.b:mm.a):'';stat=KOLBL[ALL[cur]]+(opp?' vs '+code(opp):'');sc='#e8c46b';}
     else if(clG&&!res.ko){stat='в плей-офф';sc='#7ec8a0';}
     else{stat='прошёл';sc='#7ec8a0';}
-    return {cols:cols,stat:stat,sc:sc};
+    return {cols:cols,stat:stat,sc:sc,out:li>=0};
   }
-  function teamRow(tid){var t=T[tid];if(!t)return '';var tk=track(tid);var bars=tk.cols.map(function(c){return '<b style="flex:1;height:5px;background:'+CM[c]+';border-radius:3px"></b>';}).join('');return '<div style="margin-bottom:9px"><div style="display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:4px"><span style="background:'+TC[t.tier]+';color:#0a1c13;font-size:10px;font-weight:500;width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center">'+t.tier+'</span>'+flagHtml(t)+' <span>'+esc(t.ru)+'</span><span style="margin-left:auto;font-size:11px;color:'+tk.sc+'">'+tk.stat+'</span></div><div style="display:flex;gap:2px">'+bars+'</div></div>';}
+  function teamRow(tid){var t=T[tid];if(!t)return '';var tk=track(tid);var bars=tk.cols.map(function(c){return '<b style="flex:1;height:5px;background:'+CM[c]+';border-radius:3px"></b>';}).join('');var nm=tk.out?'<span style="text-decoration:line-through;color:#6f8a7d">'+esc(t.ru)+'</span>':'<span>'+esc(t.ru)+'</span>';return '<div style="margin-bottom:9px'+(tk.out?';opacity:0.72':'')+'"><div style="display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:4px"><span style="background:'+TC[t.tier]+';color:#0a1c13;font-size:10px;font-weight:500;width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center">'+t.tier+'</span>'+flagHtml(t)+' '+nm+'<span style="margin-left:auto;font-size:11px;color:'+tk.sc+'">'+tk.stat+'</span></div><div style="display:flex;gap:2px">'+bars+'</div></div>';}
   var KOCHAIN=['ko','w32','w16','wqf','wsf','wf'];
   function remGroup(tid){var n=(G.matches||[]).filter(function(m){return m.st==='group'&&(m.a===tid||m.b===tid);}).length;return Math.max(0,3-n);}
   function teamPotential(tid,cap){var t=T[tid];if(!t)return 0;var r=G.res[tid]||{},tier=t.tier,add=remGroup(tid)*P.gw[tier],cut=KOCHAIN.indexOf(cap);for(var i=0;i<=cut;i++){var k=KOCHAIN[i];if(!r[k])add+=P[k][tier];}return add;}
