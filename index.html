@@ -542,10 +542,7 @@ function applyEventsTo(g,evs){
 async function syncResults(){
   setMsg('Загружаю результаты…');render();
   try{
-    const end=new Date(Date.now()+86400000);
-    let to=end.toISOString().slice(0,10).replace(/-/g,'');
-    if(to>'20260801')to='20260801';
-    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-'+to+'&limit=500';
+    const url='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260720&limit=500';
     const resp=await fetch(url);
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     const data=await resp.json();
