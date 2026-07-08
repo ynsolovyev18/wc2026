@@ -1033,6 +1033,8 @@ function viewPlayoff(){
   function gOwner(cx,cyy,name,dim){var u=medUrl(name);if(!u)return '';var id='gb'+(++cid);var g='<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="8"/></clipPath><image href="'+u+'" x="'+(cx-8)+'" y="'+(cyy-8)+'" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="8" fill="none" stroke="#e8c46b" stroke-width="1"/>';return dim?'<g opacity="0.45">'+g+'</g>':g;}
   function gRow(x,ty,w,tid,win,dim,fs,sc,empty){if(!tid)return '<text x="'+(x+9)+'" y="'+(ty+4)+'" fill="#4d6358" font-size="'+(fs-1.5)+'">'+(empty||'—')+'</text>';var t=T[tid],o=own(tid),col=win?'#e8c46b':(dim?'#5f7a6b':'#e9f2ec');var s=gFlag(x+7,ty-7,tid,dim);s+='<text x="'+(x+33)+'" y="'+(ty+4)+'" fill="'+col+'" font-size="'+fs+'"'+(win?' font-weight="600"':'')+'>'+esc(t.ru)+'</text>';var hs=(sc!==''&&sc!=null);if(hs)s+='<text x="'+(x+w-7)+'" y="'+(ty+4)+'" text-anchor="end" font-size="'+fs+'" fill="'+(win?'#e8c46b':(dim?'#5f7a6b':'#cfe0d6'))+'"'+(win?' font-weight="600"':'')+'>'+sc+'</text>';if(o)s+=gOwner(x+w-(hs?27:13),ty,o,dim);return s;}
   function gBox(x,yc,w,h,nd,fs,round,sd){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):((round===0&&!nd.real)?!grpDone(tid,sd):false),sc:nd.m?pscore(nd.m,tid):''};}var sa=stt(nd.a),sb=stt(nd.b),emp=round===0?'3-е?':'—';var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#122b1d" stroke="'+(played?'#2c5a40':'#1f4530')+'"/>';s+=gRow(x,yc-h/4,w,nd.a,sa?sa.win:false,sa?sa.dim:false,fs,sa?sa.sc:'',emp);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,sb?sb.win:false,sb?sb.dim:false,fs,sb?sb.sc:'',emp);return s;}
+  function cRow(x,ty,w,tid,st){if(!tid)return '<text x="'+(x+8)+'" y="'+(ty+3.5)+'" fill="#557066" font-size="10">—</text>';var col=st.win?'#e8c46b':(st.dim?'#6f8a7d':'#e9f2ec'),o=own(tid),s=gFlag(x+6,ty-7,tid,st.dim);s+='<text x="'+(x+31)+'" y="'+(ty+3.5)+'" fill="'+col+'" font-size="11"'+(st.win?' font-weight="600"':'')+'>'+code(tid)+'</text>';var hs=(st.sc!==''&&st.sc!=null);if(hs)s+='<text x="'+(x+w-6)+'" y="'+(ty+3.5)+'" text-anchor="end" font-size="11" fill="'+(st.win?'#e8c46b':'#cfe0d6')+'">'+st.sc+'</text>';else if(o)s+=gOwner(x+w-11,ty,o,st.dim);return s;}
+  function gBoxC(x,yc,w,h,nd,gold){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):false,sc:nd.m?pscore(nd.m,tid):''};}var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="7" fill="'+(gold?'#14301e':'#122b1d')+'" stroke="'+(gold?'#e8c46b':(played?'#2c5a40':'#1f4530'))+'" stroke-width="'+(gold?1.5:1)+'"/>';s+=cRow(x,yc-h/4,w,nd.a,stt(nd.a));s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=cRow(x,yc+h/4,w,nd.b,stt(nd.b));return s;}
   function gConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="1"/>';}
   function bScreen1(R,sd){
     var COLX=[3,199],BW=182,BH=36,fs=12.5,s='';
@@ -1044,15 +1046,17 @@ function viewPlayoff(){
     return '<svg viewBox="0 0 384 696" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
   function bScreen2(R,sd){
-    var COLX=[3,133,263],BW=118,BH=46,fs=12,s='';
-    function cq(k){return 130*k+58;}function cs(sm){return 260*sm+123;}function cf(){return 253;}
-    for(var sm=0;sm<2;sm++){s+=gConn(COLX[0]+BW,COLX[1],cq(2*sm),cq(2*sm+1),cs(sm));}
-    s+=gConn(COLX[1]+BW,COLX[2],cs(0),cs(1),cf());
-    s+='<text x="'+(COLX[0]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/4</text><text x="'+(COLX[1]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">1/2</text><text x="'+(COLX[2]+BW/2)+'" y="15" text-anchor="middle" fill="#8fae9c" font-size="11">Финал</text>';
-    for(var k=0;k<4;k++){s+=gBox(COLX[0],cq(k),BW,BH,R[2][k],fs,2,sd);}
-    for(var sm2=0;sm2<2;sm2++){s+=gBox(COLX[1],cs(sm2),BW,BH,R[3][sm2],fs,3,sd);}
-    s+=gBox(COLX[2],cf(),BW,BH,R[4][0],fs,4,sd);
-    return '<svg viewBox="0 0 384 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
+    var QFX=3,QFW=182,SFX=199,SFW=72,FX=283,FW=98,s='';
+    var cq=[40,94,186,240];function cs(sm){return sm===0?67:213;}var cf=140;
+    s+=gConn(QFX+QFW,SFX,cq[0],cq[1],cs(0));
+    s+=gConn(QFX+QFW,SFX,cq[2],cq[3],cs(1));
+    s+=gConn(SFX+SFW,FX,cs(0),cs(1),cf);
+    s+='<text x="'+(QFX+QFW/2)+'" y="12" text-anchor="middle" fill="#8fae9c" font-size="11">1/4 финала</text><text x="'+(SFX+SFW/2)+'" y="12" text-anchor="middle" fill="#8fae9c" font-size="10">1/2</text><text x="'+(FX+FW/2)+'" y="12" text-anchor="middle" fill="#e8c46b" font-size="11">Финал</text>';
+    for(var k=0;k<4;k++){s+=gBox(QFX,cq[k],QFW,46,R[2][k],12.5,2,sd);}
+    s+=gBoxC(SFX,cs(0),SFW,42,R[3][0],false);
+    s+=gBoxC(SFX,cs(1),SFW,42,R[3][1],false);
+    s+=gBoxC(FX,cf,FW,54,R[4][0],true);
+    return '<svg viewBox="0 0 384 268" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
   function bracketTwoScreen(){
     var D=bracketData(),R=D.R,sd=D.sd,champ=R[4][0].w,t0=(bvw===0);
@@ -1122,7 +1126,7 @@ function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
 let upcomingMatches=[];
 let upcomingOpen=false;
 function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
-let bvw=0;function setBvw(v){bvw=v;render();}
+let bvw=1;function setBvw(v){bvw=v;render();}
 function pendingTeams(){
   const s=new Set();
   if(!G||G.phase!=='play'||!Array.isArray(upcomingMatches))return s;
