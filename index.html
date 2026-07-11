@@ -1072,10 +1072,16 @@ function viewPlayoff(){
     return '<svg viewBox="0 0 292 178" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
   function ownImg(name,extra){var u=medUrl(name);if(!u)return '';var a=avof(name);return '<img src="'+u+'" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:'+(a?a.p:'50% 20%')+';border:1px solid var(--gold);flex:none;'+(extra||'')+'">';}
-  function mCard(nd,gold,round,sd){
+  function mCard(nd,gold,round,sd,fa,fb){
     var played=!!nd.w;
-    function row(tid){
-      if(!tid)return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">'+(round===0?'3-е место · ещё не распределено':'победитель ещё не определён')+'</div>';
+    function nm(tid){return tid?(T[tid]?T[tid].ru:code(tid)):'?';}
+    function empty(feed){
+      if(round===0)return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">3-е место · ещё не распределено</div>';
+      if(feed&&(feed.a||feed.b))return '<div style="display:flex;align-items:center;gap:6px;padding:9px 0;font-size:13px;color:#6f8a7d"><span style="font-size:11px;color:#557066">победитель:</span>'+esc(nm(feed.a))+' / '+esc(nm(feed.b))+'</div>';
+      return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">победитель ещё не определён</div>';
+    }
+    function row(tid,feed){
+      if(!tid)return empty(feed);
       var t=T[tid],o=own(tid),win=played&&nd.w===tid,lose=played&&nd.w!==tid;
       var soft=(!played&&round===0&&!nd.real&&!grpDone(tid,sd));
       var sc=nd.m?pscore(nd.m,tid):'';
@@ -1085,12 +1091,13 @@ function viewPlayoff(){
       if(sc!=='')h+='<b style="margin-left:auto;font-size:18px;color:'+col+';font-weight:'+(win?'700':'500')+'">'+esc(sc)+'</b>';
       return h+'</div>';
     }
-    return '<div style="background:#122b1d;border:'+(gold?'1.5px solid #e8c46b':'1px solid #1f4530')+';border-radius:12px;padding:5px 12px;margin-bottom:8px">'+row(nd.a)+'<div style="height:1px;background:#1f4530"></div>'+row(nd.b)+'</div>';
+    return '<div style="background:#122b1d;border:'+(gold?'1.5px solid #e8c46b':'1px solid #1f4530')+';border-radius:12px;padding:5px 12px;margin-bottom:8px">'+row(nd.a,fa)+'<div style="height:1px;background:#1f4530"></div>'+row(nd.b,fb)+'</div>';
   }
   function stageCards(R,sd,stage){
     var ms=R[stage],h='',NEXT=['1/8','1/4','1/2','финале'];
-    if(stage===4){var ch=ms[0].w;h+=mCard(ms[0],true,4,sd);h+=ch?'<div style="text-align:center;margin-top:2px;font-size:15px;color:var(--gold);font-weight:600">🏆 '+esc(T[ch]?T[ch].ru:code(ch))+(own(ch)?' · '+esc(own(ch)):'')+'</div>':'<div style="text-align:center;margin-top:2px;font-size:12px;color:#8fae9c">чемпион ещё не известен</div>';return h;}
-    for(var j=0;j<ms.length/2;j++){h+='<div style="border-left:2px solid #2c5a40;padding-left:10px;margin-bottom:14px">'+mCard(ms[2*j],false,stage,sd)+mCard(ms[2*j+1],false,stage,sd)+'<div style="font-size:11px;color:#8fae9c">↳ победители встретятся в '+NEXT[stage]+'</div></div>';}
+    function fd(i,side){return stage>0?R[stage-1][2*i+side]:null;}
+    if(stage===4){var ch=ms[0].w;h+=mCard(ms[0],true,4,sd,fd(0,0),fd(0,1));h+=ch?'<div style="text-align:center;margin-top:2px;font-size:15px;color:var(--gold);font-weight:600">🏆 '+esc(T[ch]?T[ch].ru:code(ch))+(own(ch)?' · '+esc(own(ch)):'')+'</div>':'<div style="text-align:center;margin-top:2px;font-size:12px;color:#8fae9c">чемпион ещё не известен</div>';return h;}
+    for(var j=0;j<ms.length/2;j++){h+='<div style="border-left:2px solid #2c5a40;padding-left:10px;margin-bottom:14px">'+mCard(ms[2*j],false,stage,sd,fd(2*j,0),fd(2*j,1))+mCard(ms[2*j+1],false,stage,sd,fd(2*j+1,0),fd(2*j+1,1))+'<div style="font-size:11px;color:#8fae9c">↳ победители встретятся в '+NEXT[stage]+'</div></div>';}
     return h;
   }
   function bracketFocus(){
