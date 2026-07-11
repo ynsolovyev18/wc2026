@@ -1032,9 +1032,7 @@ function viewPlayoff(){
   function gFlag(x,y,tid,dim){var t=T[tid];if(!t||!t.iso)return '';var im='<image href="https://flagcdn.com/48x36/'+t.iso+'.png" x="'+x+'" y="'+y+'" width="22" height="15" preserveAspectRatio="xMidYMid slice"/>';return dim?'<g opacity="0.45">'+im+'</g>':im;}
   function gOwner(cx,cyy,name,dim){var u=medUrl(name);if(!u)return '';var id='gb'+(++cid);var g='<clipPath id="'+id+'"><circle cx="'+cx+'" cy="'+cyy+'" r="8"/></clipPath><image href="'+u+'" x="'+(cx-8)+'" y="'+(cyy-8)+'" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cyy+'" r="8" fill="none" stroke="#e8c46b" stroke-width="1"/>';return dim?'<g opacity="0.45">'+g+'</g>':g;}
   function gRow(x,ty,w,tid,win,dim,fs,sc,empty){if(!tid)return '<text x="'+(x+9)+'" y="'+(ty+4)+'" fill="#4d6358" font-size="'+(fs-1.5)+'">'+(empty||'—')+'</text>';var t=T[tid],o=own(tid),col=win?'#e8c46b':(dim?'#5f7a6b':'#e9f2ec');var s=gFlag(x+7,ty-7,tid,dim);s+='<text x="'+(x+33)+'" y="'+(ty+4)+'" fill="'+col+'" font-size="'+fs+'"'+(win?' font-weight="600"':'')+'>'+esc(t.ru)+'</text>';var hs=(sc!==''&&sc!=null);if(hs)s+='<text x="'+(x+w-7)+'" y="'+(ty+4)+'" text-anchor="end" font-size="'+fs+'" fill="'+(win?'#e8c46b':(dim?'#5f7a6b':'#cfe0d6'))+'"'+(win?' font-weight="600"':'')+'>'+sc+'</text>';if(o)s+=gOwner(x+w-(hs?27:13),ty,o,dim);return s;}
-  function gBox(x,yc,w,h,nd,fs,round,sd){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):((round===0&&!nd.real)?!grpDone(tid,sd):false),sc:nd.m?pscore(nd.m,tid):''};}var sa=stt(nd.a),sb=stt(nd.b),emp=round===0?'3-е?':'—';var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#122b1d" stroke="'+(played?'#2c5a40':'#1f4530')+'"/>';s+=gRow(x,yc-h/4,w,nd.a,sa?sa.win:false,sa?sa.dim:false,fs,sa?sa.sc:'',emp);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,sb?sb.win:false,sb?sb.dim:false,fs,sb?sb.sc:'',emp);return s;}
-  function cRow(x,ty,w,tid,st){if(!tid)return '<text x="'+(x+8)+'" y="'+(ty+3.5)+'" fill="#557066" font-size="10">—</text>';var col=st.win?'#e8c46b':(st.dim?'#6f8a7d':'#e9f2ec'),o=own(tid),s=gFlag(x+6,ty-7,tid,st.dim);s+='<text x="'+(x+31)+'" y="'+(ty+3.5)+'" fill="'+col+'" font-size="11"'+(st.win?' font-weight="600"':'')+'>'+code(tid)+'</text>';var hs=(st.sc!==''&&st.sc!=null);if(hs)s+='<text x="'+(x+w-6)+'" y="'+(ty+3.5)+'" text-anchor="end" font-size="11" fill="'+(st.win?'#e8c46b':'#cfe0d6')+'">'+st.sc+'</text>';else if(o)s+=gOwner(x+w-11,ty,o,st.dim);return s;}
-  function gBoxC(x,yc,w,h,nd,gold){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):false,sc:nd.m?pscore(nd.m,tid):''};}var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="7" fill="'+(gold?'#14301e':'#122b1d')+'" stroke="'+(gold?'#e8c46b':(played?'#2c5a40':'#1f4530'))+'" stroke-width="'+(gold?1.5:1)+'"/>';s+=cRow(x,yc-h/4,w,nd.a,stt(nd.a));s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=cRow(x,yc+h/4,w,nd.b,stt(nd.b));return s;}
+  function gBox(x,yc,w,h,nd,fs,round,sd,gold){var played=!!nd.w;function stt(tid){if(!tid)return null;return{win:played&&nd.w===tid,dim:played?(nd.w!==tid):((round===0&&!nd.real)?!grpDone(tid,sd):false),sc:nd.m?pscore(nd.m,tid):''};}var sa=stt(nd.a),sb=stt(nd.b),emp=round===0?'3-е?':'—';var s='<rect x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="'+(gold?'#14301e':'#122b1d')+'" stroke="'+(gold?'#e8c46b':(played?'#2c5a40':'#1f4530'))+'" stroke-width="'+(gold?1.5:1)+'"/>';s+=gRow(x,yc-h/4,w,nd.a,sa?sa.win:false,sa?sa.dim:false,fs,sa?sa.sc:'',emp);s+='<line x1="'+(x+5)+'" y1="'+yc+'" x2="'+(x+w-5)+'" y2="'+yc+'" stroke="#1f4530" stroke-width="0.5"/>';s+=gRow(x,yc+h/4,w,nd.b,sb?sb.win:false,sb?sb.dim:false,fs,sb?sb.sc:'',emp);return s;}
   function gConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="1"/>';}
   function bScreen1(R,sd){
     var COLX=[3,199],BW=182,BH=36,fs=12.5,s='';
@@ -1046,66 +1044,27 @@ function viewPlayoff(){
     return '<svg viewBox="0 0 384 696" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
   function bScreen2(R,sd){
-    var QFX=3,QFW=182,SFX=199,SFW=72,FX=283,FW=98,s='';
-    var cq=[40,94,186,240];function cs(sm){return sm===0?67:213;}var cf=140;
-    s+=gConn(QFX+QFW,SFX,cq[0],cq[1],cs(0));
-    s+=gConn(QFX+QFW,SFX,cq[2],cq[3],cs(1));
-    s+=gConn(SFX+SFW,FX,cs(0),cs(1),cf);
-    s+='<text x="'+(QFX+QFW/2)+'" y="12" text-anchor="middle" fill="#8fae9c" font-size="11">1/4 финала</text><text x="'+(SFX+SFW/2)+'" y="12" text-anchor="middle" fill="#8fae9c" font-size="10">1/2</text><text x="'+(FX+FW/2)+'" y="12" text-anchor="middle" fill="#e8c46b" font-size="11">Финал</text>';
-    for(var k=0;k<4;k++){s+=gBox(QFX,cq[k],QFW,46,R[2][k],12.5,2,sd);}
-    s+=gBoxC(SFX,cs(0),SFW,42,R[3][0],false);
-    s+=gBoxC(SFX,cs(1),SFW,42,R[3][1],false);
-    s+=gBoxC(FX,cf,FW,54,R[4][0],true);
-    return '<svg viewBox="0 0 384 268" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
+    var AX=2,AW=176,BX=196,BW=176,FX=80,FW=240,TRK=386,s='';
+    var cq=[48,110,212,274],cs=[79,243],cf=346;
+    s+=gConn(AX+AW,BX,cq[0],cq[1],cs[0]);
+    s+=gConn(AX+AW,BX,cq[2],cq[3],cs[1]);
+    s+='<path d="M'+(BX+BW)+' '+cs[0]+' H'+TRK+' M'+(BX+BW)+' '+cs[1]+' H'+TRK+' M'+TRK+' '+cs[0]+' V'+cf+' H'+(FX+FW)+'" fill="none" stroke="#2c5a40" stroke-width="1"/>';
+    s+='<text x="'+(AX+AW/2)+'" y="14" text-anchor="middle" fill="#8fae9c" font-size="11">1/4 финала</text><text x="'+(BX+BW/2)+'" y="14" text-anchor="middle" fill="#8fae9c" font-size="11">1/2 финала</text>';
+    s+='<text x="'+(FX+FW/2)+'" y="309" text-anchor="middle" fill="#e8c46b" font-size="11" font-weight="600">Финал</text>';
+    for(var k=0;k<4;k++){s+=gBox(AX,cq[k],AW,48,R[2][k],12.5,2,sd);}
+    s+=gBox(BX,cs[0],BW,48,R[3][0],12.5,3,sd);
+    s+=gBox(BX,cs[1],BW,48,R[3][1],12.5,3,sd);
+    s+=gBox(FX,cf,FW,56,R[4][0],13.5,4,sd,true);
+    return '<svg viewBox="0 0 400 388" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
-  function autoStage(R){var s=0;for(var r=0;r<5;r++){if(R[r].some(function(n){return n.a||n.b;}))s=r;}return s;}
-  function mConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="0.6"/>';}
-  function miniBracket(R,stage){
-    var COLX=[4,62,120,178,236],BW=52,s='';
-    function cyR(r,i){var p=9.5*Math.pow(2,r);return 8+p/2+p*i;}
-    for(var r=1;r<5;r++){for(var i=0;i<R[r].length;i++){s+=mConn(COLX[r-1]+BW,COLX[r],cyR(r-1,2*i),cyR(r-1,2*i+1),cyR(r,i));}}
-    for(var r2=0;r2<5;r2++){for(var i2=0;i2<R[r2].length;i2++){var nd=R[r2][i2],sel=(r2===stage),yc=cyR(r2,i2),pl=!!nd.w;
-      s+='<rect x="'+COLX[r2]+'" y="'+(yc-3)+'" width="'+BW+'" height="6" rx="2" fill="'+(sel?'#1a3a25':(pl?'#16341f':'#102418'))+'" stroke="'+(sel?'#e8c46b':'#2c5a40')+'" stroke-width="'+(sel?1.1:0.6)+'"/>';
-      if((nd.a&&own(nd.a))||(nd.b&&own(nd.b)))s+='<circle cx="'+(COLX[r2]+BW-4)+'" cy="'+yc+'" r="1.9" fill="#e8c46b"/>';
-    }}
-    ['1/16','1/8','1/4','1/2','Финал'].forEach(function(l,r){s+='<text x="'+(COLX[r]+BW/2)+'" y="172" text-anchor="middle" fill="'+(r===stage?'#e8c46b':'#8fae9c')+'" font-size="8"'+(r===stage?' font-weight="600"':'')+'>'+l+'</text>';});
-    return '<svg viewBox="0 0 292 178" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
-  }
-  function ownImg(name,extra){var u=medUrl(name);if(!u)return '';var a=avof(name);return '<img src="'+u+'" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:'+(a?a.p:'50% 20%')+';border:1px solid var(--gold);flex:none;'+(extra||'')+'">';}
-  function mCard(nd,gold,round,sd,fa,fb){
-    var played=!!nd.w;
-    function nm(tid){return tid?(T[tid]?T[tid].ru:code(tid)):'?';}
-    function empty(feed){
-      if(round===0)return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">3-е место · ещё не распределено</div>';
-      if(feed&&(feed.a||feed.b))return '<div style="display:flex;align-items:center;gap:6px;padding:9px 0;font-size:13px;color:#6f8a7d"><span style="font-size:11px;color:#557066">победитель:</span>'+esc(nm(feed.a))+' / '+esc(nm(feed.b))+'</div>';
-      return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">победитель ещё не определён</div>';
-    }
-    function row(tid,feed){
-      if(!tid)return empty(feed);
-      var t=T[tid],o=own(tid),win=played&&nd.w===tid,lose=played&&nd.w!==tid;
-      var soft=(!played&&round===0&&!nd.real&&!grpDone(tid,sd));
-      var sc=nd.m?pscore(nd.m,tid):'';
-      var col=win?'#e8c46b':(lose?'#6f8a7d':'#e9f2ec');
-      var h='<div style="display:flex;align-items:center;gap:9px;padding:7px 0'+(lose?';opacity:0.55':(soft?';opacity:0.6':''))+'">'+flagHtml(t)+'<span style="font-size:15px;color:'+col+';font-weight:'+(win?'600':'400')+(lose?';text-decoration:line-through':'')+'">'+esc(t.ru)+'</span>';
-      if(o)h+=ownImg(o,sc===''?'margin-left:auto;':'');
-      if(sc!=='')h+='<b style="margin-left:auto;font-size:18px;color:'+col+';font-weight:'+(win?'700':'500')+'">'+esc(sc)+'</b>';
-      return h+'</div>';
-    }
-    return '<div style="background:#122b1d;border:'+(gold?'1.5px solid #e8c46b':'1px solid #1f4530')+';border-radius:12px;padding:5px 12px;margin-bottom:8px">'+row(nd.a,fa)+'<div style="height:1px;background:#1f4530"></div>'+row(nd.b,fb)+'</div>';
-  }
-  function stageCards(R,sd,stage){
-    var ms=R[stage],h='',NEXT=['1/8','1/4','1/2','финале'];
-    function fd(i,side){return stage>0?R[stage-1][2*i+side]:null;}
-    if(stage===4){var ch=ms[0].w;h+=mCard(ms[0],true,4,sd,fd(0,0),fd(0,1));h+=ch?'<div style="text-align:center;margin-top:2px;font-size:15px;color:var(--gold);font-weight:600">🏆 '+esc(T[ch]?T[ch].ru:code(ch))+(own(ch)?' · '+esc(own(ch)):'')+'</div>':'<div style="text-align:center;margin-top:2px;font-size:12px;color:#8fae9c">чемпион ещё не известен</div>';return h;}
-    for(var j=0;j<ms.length/2;j++){h+='<div style="border-left:2px solid #2c5a40;padding-left:10px;margin-bottom:14px">'+mCard(ms[2*j],false,stage,sd,fd(2*j,0),fd(2*j,1))+mCard(ms[2*j+1],false,stage,sd,fd(2*j+1,0),fd(2*j+1,1))+'<div style="font-size:11px;color:#8fae9c">↳ победители встретятся в '+NEXT[stage]+'</div></div>';}
-    return h;
-  }
-  function bracketFocus(){
-    var D=bracketData(),R=D.R,sd=D.sd,stage=(bst>=0?bst:autoStage(R));
-    var LB=['1/16','1/8','1/4','1/2','Финал'];
-    var tabs='<div style="display:flex;gap:4px;margin:10px 0 12px">'+LB.map(function(l,r){var on=(r===stage);return '<button style="flex:1;font-size:11.5px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400')+'" onclick="setBst('+r+')">'+l+'</button>';}).join('')+'</div>';
-    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Мини-сетка — весь плей-офф: золотом обведена открытая стадия, точка — матч с чьей-то командой. Ниже эта стадия крупно: победитель золотом, вылетевший зачёркнут.</div>';
-    return hint+miniBracket(R,stage)+tabs+stageCards(R,sd,stage);
+  function bracketTwoScreen(){
+    var D=bracketData(),R=D.R,sd=D.sd,champ=R[4][0].w,t0=(bvw===0);
+    function pill(on){return 'flex:1;font-size:12px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400');}
+    var toggle='<div style="display:flex;gap:6px;margin-bottom:10px"><button style="'+pill(t0)+'" onclick="setBvw(0)">1/16 · 1/8</button><button style="'+pill(!t0)+'" onclick="setBvw(1)">1/4 · 1/2 · Финал</button></div>';
+    var body=t0?bScreen1(R,sd):bScreen2(R,sd);
+    var banner=(!t0&&champ)?'<div style="text-align:center;margin-top:8px;font-size:14px;color:var(--gold);font-weight:600">🏆 '+esc(T[champ]?T[champ].ru:code(champ))+(own(champ)?' · '+esc(own(champ)):'')+'</div>':'';
+    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Бледные — место в сетке ещё не подтверждено; яркие — подтверждено. По ходу плей-офф появляется счёт, победитель — золотом, проигравший гаснет. Кружок — чья команда.</div>';
+    return hint+toggle+body+banner;
   }
   function fullBracketSvg(){
     var sd=standings();
@@ -1135,7 +1094,7 @@ function viewPlayoff(){
     return tabs+svg;
   }
   function pathsHtml(){var legend='<div style="display:flex;gap:11px;font-size:10px;color:#8fae9c;margin-bottom:12px"><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#7ec8a0"></b> прошёл</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e8c46b"></b> сейчас</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e69a8c"></b> вылет</span></div>';return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="color:var(--gold);font-size:15px;font-weight:500">🧭 Пути игроков</span><span style="flex:1;height:1px;background:var(--line)"></span></div>'+legend+'<div style="font-size:11px;color:#8fae9c;margin-bottom:10px;line-height:1.5">У имени: <b>текущие очки</b> → <b style="color:var(--gold)">потенциальный максимум</b> — если все сборные дойдут до предела; при встрече своих команд проходит та, что из слабейшей корзины.</div>'+G.players.map(function(p,i){return pcard(i);}).join('');}
-  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+bracketFocus()+'</div>'+pathsHtml()+'</div>';
+  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+bracketTwoScreen()+'</div>'+pathsHtml()+'</div>';
 }
 
 function viewRules(){
@@ -1166,7 +1125,7 @@ function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
 let upcomingMatches=[];
 let upcomingOpen=false;
 function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
-let bst=-1;function setBst(v){bst=v;render();}
+let bvw=1;function setBvw(v){bvw=v;render();}
 function pendingTeams(){
   const s=new Set();
   if(!G||G.phase!=='play'||!Array.isArray(upcomingMatches))return s;
