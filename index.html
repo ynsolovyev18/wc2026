@@ -1058,14 +1058,47 @@ function viewPlayoff(){
     s+=gBoxC(FX,cf,FW,54,R[4][0],true);
     return '<svg viewBox="0 0 384 268" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
   }
-  function bracketTwoScreen(){
-    var D=bracketData(),R=D.R,sd=D.sd,champ=R[4][0].w,t0=(bvw===0);
-    function pill(on){return 'flex:1;font-size:12px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400');}
-    var toggle='<div style="display:flex;gap:6px;margin-bottom:10px"><button style="'+pill(t0)+'" onclick="setBvw(0)">1/16 · 1/8</button><button style="'+pill(!t0)+'" onclick="setBvw(1)">1/4 · 1/2 · Финал</button></div>';
-    var body=t0?bScreen1(R,sd):bScreen2(R,sd);
-    var banner=(!t0&&champ)?'<div style="text-align:center;margin-top:8px;font-size:14px;color:var(--gold);font-weight:600">🏆 '+esc(T[champ]?T[champ].ru:code(champ))+(own(champ)?' · '+esc(own(champ)):'')+'</div>':'';
-    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Бледные — место в сетке ещё не подтверждено; яркие — подтверждено. По ходу плей-офф появляется счёт, победитель — золотом, проигравший гаснет. Кружок — чья команда.</div>';
-    return hint+toggle+body+banner;
+  function autoStage(R){var s=0;for(var r=0;r<5;r++){if(R[r].some(function(n){return n.a||n.b;}))s=r;}return s;}
+  function mConn(crx,plx,c0,c1,cp){var mid=crx+(plx-crx)/2;return '<path d="M'+crx+' '+c0+' H'+mid+' M'+crx+' '+c1+' H'+mid+' M'+mid+' '+c0+' V'+c1+' M'+mid+' '+cp+' H'+plx+'" fill="none" stroke="#2c5a40" stroke-width="0.6"/>';}
+  function miniBracket(R,stage){
+    var COLX=[4,62,120,178,236],BW=52,s='';
+    function cyR(r,i){var p=9.5*Math.pow(2,r);return 8+p/2+p*i;}
+    for(var r=1;r<5;r++){for(var i=0;i<R[r].length;i++){s+=mConn(COLX[r-1]+BW,COLX[r],cyR(r-1,2*i),cyR(r-1,2*i+1),cyR(r,i));}}
+    for(var r2=0;r2<5;r2++){for(var i2=0;i2<R[r2].length;i2++){var nd=R[r2][i2],sel=(r2===stage),yc=cyR(r2,i2),pl=!!nd.w;
+      s+='<rect x="'+COLX[r2]+'" y="'+(yc-3)+'" width="'+BW+'" height="6" rx="2" fill="'+(sel?'#1a3a25':(pl?'#16341f':'#102418'))+'" stroke="'+(sel?'#e8c46b':'#2c5a40')+'" stroke-width="'+(sel?1.1:0.6)+'"/>';
+      if((nd.a&&own(nd.a))||(nd.b&&own(nd.b)))s+='<circle cx="'+(COLX[r2]+BW-4)+'" cy="'+yc+'" r="1.9" fill="#e8c46b"/>';
+    }}
+    ['1/16','1/8','1/4','1/2','Финал'].forEach(function(l,r){s+='<text x="'+(COLX[r]+BW/2)+'" y="172" text-anchor="middle" fill="'+(r===stage?'#e8c46b':'#8fae9c')+'" font-size="8"'+(r===stage?' font-weight="600"':'')+'>'+l+'</text>';});
+    return '<svg viewBox="0 0 292 178" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">'+s+'</svg>';
+  }
+  function ownImg(name,extra){var u=medUrl(name);if(!u)return '';var a=avof(name);return '<img src="'+u+'" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:'+(a?a.p:'50% 20%')+';border:1px solid var(--gold);flex:none;'+(extra||'')+'">';}
+  function mCard(nd,gold,round,sd){
+    var played=!!nd.w;
+    function row(tid){
+      if(!tid)return '<div style="display:flex;align-items:center;padding:9px 0;color:#557066;font-size:12.5px">'+(round===0?'3-е место · ещё не распределено':'победитель ещё не определён')+'</div>';
+      var t=T[tid],o=own(tid),win=played&&nd.w===tid,lose=played&&nd.w!==tid;
+      var soft=(!played&&round===0&&!nd.real&&!grpDone(tid,sd));
+      var sc=nd.m?pscore(nd.m,tid):'';
+      var col=win?'#e8c46b':(lose?'#6f8a7d':'#e9f2ec');
+      var h='<div style="display:flex;align-items:center;gap:9px;padding:7px 0'+(lose?';opacity:0.55':(soft?';opacity:0.6':''))+'">'+flagHtml(t)+'<span style="font-size:15px;color:'+col+';font-weight:'+(win?'600':'400')+(lose?';text-decoration:line-through':'')+'">'+esc(t.ru)+'</span>';
+      if(o)h+=ownImg(o,sc===''?'margin-left:auto;':'');
+      if(sc!=='')h+='<b style="margin-left:auto;font-size:18px;color:'+col+';font-weight:'+(win?'700':'500')+'">'+esc(sc)+'</b>';
+      return h+'</div>';
+    }
+    return '<div style="background:#122b1d;border:'+(gold?'1.5px solid #e8c46b':'1px solid #1f4530')+';border-radius:12px;padding:5px 12px;margin-bottom:8px">'+row(nd.a)+'<div style="height:1px;background:#1f4530"></div>'+row(nd.b)+'</div>';
+  }
+  function stageCards(R,sd,stage){
+    var ms=R[stage],h='',NEXT=['1/8','1/4','1/2','финале'];
+    if(stage===4){var ch=ms[0].w;h+=mCard(ms[0],true,4,sd);h+=ch?'<div style="text-align:center;margin-top:2px;font-size:15px;color:var(--gold);font-weight:600">🏆 '+esc(T[ch]?T[ch].ru:code(ch))+(own(ch)?' · '+esc(own(ch)):'')+'</div>':'<div style="text-align:center;margin-top:2px;font-size:12px;color:#8fae9c">чемпион ещё не известен</div>';return h;}
+    for(var j=0;j<ms.length/2;j++){h+='<div style="border-left:2px solid #2c5a40;padding-left:10px;margin-bottom:14px">'+mCard(ms[2*j],false,stage,sd)+mCard(ms[2*j+1],false,stage,sd)+'<div style="font-size:11px;color:#8fae9c">↳ победители встретятся в '+NEXT[stage]+'</div></div>';}
+    return h;
+  }
+  function bracketFocus(){
+    var D=bracketData(),R=D.R,sd=D.sd,stage=(bst>=0?bst:autoStage(R));
+    var LB=['1/16','1/8','1/4','1/2','Финал'];
+    var tabs='<div style="display:flex;gap:4px;margin:10px 0 12px">'+LB.map(function(l,r){var on=(r===stage);return '<button style="flex:1;font-size:11.5px;padding:7px 0;border-radius:8px;cursor:pointer;border:1px solid '+(on?'#e8c46b':'#1f4530')+';background:'+(on?'#15301f':'transparent')+';color:'+(on?'#e8c46b':'#8fae9c')+';font-weight:'+(on?'600':'400')+'" onclick="setBst('+r+')">'+l+'</button>';}).join('')+'</div>';
+    var hint='<div style="font-size:11px;color:#8fae9c;margin-bottom:8px;line-height:1.45">Мини-сетка — весь плей-офф: золотом обведена открытая стадия, точка — матч с чьей-то командой. Ниже эта стадия крупно: победитель золотом, вылетевший зачёркнут.</div>';
+    return hint+miniBracket(R,stage)+tabs+stageCards(R,sd,stage);
   }
   function fullBracketSvg(){
     var sd=standings();
@@ -1095,7 +1128,7 @@ function viewPlayoff(){
     return tabs+svg;
   }
   function pathsHtml(){var legend='<div style="display:flex;gap:11px;font-size:10px;color:#8fae9c;margin-bottom:12px"><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#7ec8a0"></b> прошёл</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e8c46b"></b> сейчас</span><span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e69a8c"></b> вылет</span></div>';return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="color:var(--gold);font-size:15px;font-weight:500">🧭 Пути игроков</span><span style="flex:1;height:1px;background:var(--line)"></span></div>'+legend+'<div style="font-size:11px;color:#8fae9c;margin-bottom:10px;line-height:1.5">У имени: <b>текущие очки</b> → <b style="color:var(--gold)">потенциальный максимум</b> — если все сборные дойдут до предела; при встрече своих команд проходит та, что из слабейшей корзины.</div>'+G.players.map(function(p,i){return pcard(i);}).join('');}
-  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+bracketTwoScreen()+'</div>'+pathsHtml()+'</div>';
+  return '<div style="max-width:480px;margin:0 auto"><div class="card"><h2>🏆 Плей-офф</h2>'+bracketFocus()+'</div>'+pathsHtml()+'</div>';
 }
 
 function viewRules(){
@@ -1126,7 +1159,7 @@ function toggleExpand(tid){EXP.has(tid)?EXP.delete(tid):EXP.add(tid);render();}
 let upcomingMatches=[];
 let upcomingOpen=false;
 function toggleUpcoming(){upcomingOpen=!upcomingOpen;render();}
-let bvw=1;function setBvw(v){bvw=v;render();}
+let bst=-1;function setBst(v){bst=v;render();}
 function pendingTeams(){
   const s=new Set();
   if(!G||G.phase!=='play'||!Array.isArray(upcomingMatches))return s;
